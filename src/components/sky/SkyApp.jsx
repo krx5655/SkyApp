@@ -46,7 +46,7 @@ function SkyApp({ onNavigateHome, onOpenSettings }) {
   const showCompass = (currentScreen === 'planets' && planetView === 'earth') || currentScreen === 'stars'
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       <Header
         showBackButton
         onBack={onNavigateHome}
@@ -60,7 +60,7 @@ function SkyApp({ onNavigateHome, onOpenSettings }) {
         />
       )}
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-y-auto">
         {currentScreen === 'moon' && <MoonView />}
         {currentScreen === 'planets' && (
           <PlanetsView view={planetView} direction={compassDirection} />

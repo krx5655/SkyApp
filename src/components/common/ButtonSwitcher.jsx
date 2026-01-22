@@ -2,7 +2,7 @@ function ButtonSwitcher({ buttons = [] }) {
   if (buttons.length === 0) return null
 
   return (
-    <div className="flex items-center justify-center gap-2 px-6 py-3 bg-macos-card-light/30 dark:bg-macos-card/30">
+    <div className="flex items-center justify-center gap-2 px-6 py-4">
       <div className="inline-flex items-center gap-1 p-1 bg-macos-border-light dark:bg-macos-border rounded-xl">
         {buttons.map((button, index) => (
           <button

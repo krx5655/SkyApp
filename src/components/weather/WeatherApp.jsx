@@ -43,14 +43,14 @@ function WeatherApp({ onNavigateHome, onOpenSettings }) {
   ] : []
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       <Header
         showBackButton
         onBack={onNavigateHome}
         onOpenSettings={onOpenSettings}
       />
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-y-auto">
         {currentScreen === 'forecast' && (
           <>
             {forecastView === 'weekly' && (
