@@ -5,9 +5,10 @@ import ButtonSwitcher from '../common/ButtonSwitcher'
 import WeeklyForecast from './WeeklyForecast'
 import DailyForecast from './DailyForecast'
 import RadarView from './RadarView'
+import SpaceWeatherView from './SpaceWeatherView'
 
 function WeatherApp({ onNavigateHome, onOpenSettings }) {
-  const [currentScreen, setCurrentScreen] = useState('forecast') // 'forecast', 'radar'
+  const [currentScreen, setCurrentScreen] = useState('forecast') // 'forecast', 'radar', 'space'
   const [forecastView, setForecastView] = useState('weekly') // 'weekly', 'daily'
   const [selectedDay, setSelectedDay] = useState(null)
 
@@ -26,6 +27,11 @@ function WeatherApp({ onNavigateHome, onOpenSettings }) {
       label: 'Radar',
       active: currentScreen === 'radar',
       onClick: () => setCurrentScreen('radar'),
+    },
+    {
+      label: 'Space Weather',
+      active: currentScreen === 'space',
+      onClick: () => setCurrentScreen('space'),
     },
   ]
 
@@ -62,6 +68,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings }) {
           </>
         )}
         {currentScreen === 'radar' && <RadarView />}
+        {currentScreen === 'space' && <SpaceWeatherView />}
       </main>
 
       <ButtonSwitcher buttons={switcherButtons} />
