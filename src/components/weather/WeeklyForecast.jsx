@@ -68,7 +68,7 @@ function WeeklyForecast({ onDaySelect }) {
         </p>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
         {mockForecast.map((day) => (
           <button
             key={day.id}
