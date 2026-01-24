@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { format, addDays } from 'date-fns'
 import weatherService from '../../services/weather/weatherService'
 
-function WeeklyForecast({ onDaySelect }) {
+function WeeklyForecast({ onDaySelect, refreshTrigger }) {
   const [forecast, setForecast] = useState([])
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Fetch weather data on mount
+  // Fetch weather data on mount and when location changes
   useEffect(() => {
     async function fetchForecast() {
       try {
@@ -30,7 +30,7 @@ function WeeklyForecast({ onDaySelect }) {
     }
 
     fetchForecast()
-  }, [])
+  }, [refreshTrigger])
 
   function getWeatherIcon(condition) {
     switch (condition) {

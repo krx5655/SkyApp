@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react'
 import Header from '../common/Header'
 import weatherService from '../../services/weather/weatherService'
 
-function MainScreen({ onNavigate, onOpenSettings }) {
+function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch current weather on mount
+  // Fetch current weather on mount and when location changes
   useEffect(() => {
     async function fetchCurrentWeather() {
       try {
+        setLoading(true)
         const weather = await weatherService.getCurrentWeather()
         setCurrentWeather(weather)
       } catch (error) {
@@ -20,7 +21,7 @@ function MainScreen({ onNavigate, onOpenSettings }) {
     }
 
     fetchCurrentWeather()
-  }, [])
+  }, [refreshTrigger])
 
   const apps = [
     {

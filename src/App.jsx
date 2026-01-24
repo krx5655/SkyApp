@@ -10,6 +10,7 @@ function App() {
     return localStorage.getItem('theme') || 'dark'
   })
   const [showSettings, setShowSettings] = useState(false)
+  const [locationRefreshTrigger, setLocationRefreshTrigger] = useState(0)
 
   // Apply theme class to document
   useEffect(() => {
@@ -33,18 +34,25 @@ function App() {
     setCurrentApp('home')
   }
 
+  const handleLocationChange = () => {
+    // Trigger refresh by updating timestamp
+    setLocationRefreshTrigger(Date.now())
+  }
+
   return (
     <div className="min-h-screen bg-macos-bg-light dark:bg-macos-bg text-macos-text-light dark:text-macos-text transition-colors duration-300">
       {currentApp === 'home' && (
         <MainScreen
           onNavigate={navigateToApp}
           onOpenSettings={() => setShowSettings(true)}
+          refreshTrigger={locationRefreshTrigger}
         />
       )}
       {currentApp === 'weather' && (
         <WeatherApp
           onNavigateHome={navigateHome}
           onOpenSettings={() => setShowSettings(true)}
+          refreshTrigger={locationRefreshTrigger}
         />
       )}
       {currentApp === 'sky' && (
@@ -59,6 +67,7 @@ function App() {
           onClose={() => setShowSettings(false)}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onLocationChange={handleLocationChange}
         />
       )}
     </div>

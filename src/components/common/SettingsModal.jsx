@@ -3,11 +3,12 @@ import { searchCities } from '../../services/geocoding/geocodingService'
 import weatherService from '../../services/weather/weatherService'
 import { clearAllCache } from '../../services/weather/cache'
 
-function SettingsModal({ onClose, theme, onToggleTheme }) {
+function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [citySearch, setCitySearch] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
   const [currentLocation, setCurrentLocation] = useState(null)
+  const [updatingLocation, setUpdatingLocation] = useState(false)
 
   // Load current location
   useEffect(() => {
@@ -39,13 +40,24 @@ function SettingsModal({ onClose, theme, onToggleTheme }) {
   }, [citySearch])
 
   // Select location
-  function selectLocation(location) {
+  async function selectLocation(location) {
+    setUpdatingLocation(true)
     weatherService.setLocation(location.latitude, location.longitude)
     setCurrentLocation({ latitude: location.latitude, longitude: location.longitude, name: location.city })
     setCitySearch('')
     setSearchResults([])
+
     // Clear cache to force refetch with new location
     clearAllCache()
+
+    // Trigger refresh in parent components
+    if (onLocationChange) {
+      onLocationChange()
+    }
+
+    // Show updating state for 1 second
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    setUpdatingLocation(false)
   }
 
   return (
@@ -67,6 +79,15 @@ function SettingsModal({ onClose, theme, onToggleTheme }) {
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Updating Location Indicator */}
+          {updatingLocation && (
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-center">
+              <div className="text-blue-600 dark:text-blue-400 font-medium">
+                Updating weather...
+              </div>
+            </div>
+          )}
+
           {/* Theme */}
           <section>
             <h3 className="text-lg font-semibold mb-4">Appearance</h3>

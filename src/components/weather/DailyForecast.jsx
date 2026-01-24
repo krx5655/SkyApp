@@ -5,8 +5,8 @@ import weatherService from '../../services/weather/weatherService'
 function DailyForecast({ selectedDay }) {
   const [hourlyData, setHourlyData] = useState([])
   const [weatherDetails, setWeatherDetails] = useState(null)
+  const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
-
   const [error, setError] = useState(null)
 
   // Fetch hourly data and weather details when selectedDay changes
@@ -17,14 +17,29 @@ function DailyForecast({ selectedDay }) {
         setError(null)
         const date = selectedDay?.date || new Date()
 
-        // Fetch hourly forecast and weather details in parallel
-        const [hourly, details] = await Promise.all([
+        // Check if this is today
+        const now = new Date()
+        const isToday = date.toDateString() === now.toDateString()
+
+        // Fetch hourly forecast, weather details, and current weather (if today) in parallel
+        const promises = [
           weatherService.getHourlyForecast(null, null, date),
           weatherService.getWeatherDetails(null, null, date),
-        ])
+        ]
 
-        setHourlyData(hourly)
-        setWeatherDetails(details)
+        if (isToday) {
+          promises.push(weatherService.getCurrentWeather().catch(() => null))
+        }
+
+        const results = await Promise.all(promises)
+
+        setHourlyData(results[0])
+        setWeatherDetails(results[1])
+        if (isToday && results[2]) {
+          setCurrentWeather(results[2])
+        } else {
+          setCurrentWeather(null)
+        }
       } catch (error) {
         console.error('Failed to fetch daily forecast:', error)
         setError(error.message)
@@ -41,17 +56,23 @@ function DailyForecast({ selectedDay }) {
   const displayCondition = selectedDay?.condition || ''
   const displayHigh = selectedDay?.high || null
   const displayLow = selectedDay?.low || null
-  const currentTemp = displayHigh && displayLow ? Math.floor((displayHigh + displayLow) / 2) : null
   const currentHour = new Date().getHours()
 
-  // Calculate temperature range for Y-axis
+  // Check if selected day is today
+  const now = new Date()
+  const isToday = displayDate.toDateString() === now.toDateString()
+
+  // Calculate temperature range for Y-axis with ±10° padding
   const allTemps = hourlyData.length > 0 ? hourlyData.map(d => d.temp) : []
   const minTemp = allTemps.length > 0 ? Math.min(...allTemps) : 0
   const maxTemp = allTemps.length > 0 ? Math.max(...allTemps) : 100
-  const tempRange = maxTemp - minTemp
-  const yAxisMin = Math.floor(minTemp / 10) * 10
-  const yAxisMax = Math.ceil(maxTemp / 10) * 10
+  const yAxisMin = minTemp - 10
+  const yAxisMax = maxTemp + 10
   const yAxisRange = yAxisMax - yAxisMin
+
+  console.log(`[DailyForecast] Hourly data points:`, hourlyData.length)
+  console.log(`[DailyForecast] Temp range: ${minTemp}° to ${maxTemp}°`)
+  console.log(`[DailyForecast] Y-axis range: ${yAxisMin}° to ${yAxisMax}°`)
 
   // Calculate precipitation range for Y-axis
   const allPrecip = hourlyData.length > 0 ? hourlyData.map(d => d.precipitation) : []
@@ -97,10 +118,19 @@ function DailyForecast({ selectedDay }) {
         <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
           {/* Temperature overlay in top-left */}
           <div className="absolute top-6 left-6 z-10">
-            <div className="text-4xl font-bold">{currentTemp}°</div>
-            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-              H: {displayHigh}° L: {displayLow}°
-            </div>
+            {isToday && currentWeather ? (
+              <>
+                <div className="text-4xl font-bold">{currentWeather.temp}°</div>
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  H: {displayHigh}° L: {displayLow}°
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-4xl font-bold">H: {displayHigh}°</div>
+                <div className="text-4xl font-bold">L: {displayLow}°</div>
+              </>
+            )}
           </div>
 
           {/* Graph container */}

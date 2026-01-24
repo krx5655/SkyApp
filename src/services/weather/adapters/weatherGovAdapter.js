@@ -104,11 +104,17 @@ class WeatherGovAdapter extends BaseWeatherAdapter {
       const now = new Date()
       const isToday = startOfDay(now).getTime() === targetDay.getTime()
 
+      console.log(`[weatherGovAdapter] Fetching hourly forecast for ${format(date, 'MMM d, yyyy')}`)
+      console.log(`[weatherGovAdapter] Total periods from API:`, periods.length)
+
       // Filter periods for the target day
       const dayPeriods = periods.filter(p => {
         const periodTime = parseISO(p.startTime)
         return startOfDay(periodTime).getTime() === targetDay.getTime()
       })
+
+      console.log(`[weatherGovAdapter] Periods for target day:`, dayPeriods.length)
+      console.log(`[weatherGovAdapter] Hours available:`, dayPeriods.map(p => parseISO(p.startTime).getHours()))
 
       // If no periods found for target day, it might be too far in future
       if (dayPeriods.length === 0) {
@@ -176,6 +182,9 @@ class WeatherGovAdapter extends BaseWeatherAdapter {
           }
         }
       }
+
+      console.log(`[weatherGovAdapter] Final hourly forecast array length:`, hourlyForecasts.length)
+      console.log(`[weatherGovAdapter] Sample temps:`, hourlyForecasts.map(h => h.temp))
 
       return hourlyForecasts
     } catch (error) {
