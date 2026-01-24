@@ -18,8 +18,7 @@ function WeeklyForecast({ onDaySelect }) {
       } catch (err) {
         console.error('Failed to fetch forecast:', err)
         setError(err.message)
-        // Fallback to mock data
-        setForecast(getMockForecast())
+        // Don't set forecast - leave it empty to show error state
       } finally {
         setLoading(false)
       }
@@ -27,27 +26,6 @@ function WeeklyForecast({ onDaySelect }) {
 
     fetchForecast()
   }, [])
-
-  // Mock data fallback
-  function getMockForecast() {
-    const conditions = ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Stormy']
-
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = addDays(new Date(), i)
-      const condition = conditions[Math.floor(Math.random() * conditions.length)]
-
-      return {
-        id: i.toString(),
-        date,
-        dayName: i === 0 ? 'Today' : format(date, 'EEEE'),
-        shortDate: format(date, 'MMM d'),
-        high: Math.floor(Math.random() * 20) + 65,
-        low: Math.floor(Math.random() * 20) + 45,
-        condition,
-        icon: getWeatherIcon(condition),
-      }
-    })
-  }
 
   function getWeatherIcon(condition) {
     switch (condition) {
@@ -104,16 +82,20 @@ function WeeklyForecast({ onDaySelect }) {
             Loading forecast...
           </div>
         </div>
-      ) : error ? (
+      ) : error && forecast.length === 0 ? (
         <div className="flex justify-center items-center py-12">
-          <div className="text-red-500">
-            Failed to load forecast. Showing cached data.
+          <div className="text-center">
+            <div className="text-red-500 mb-2">Failed to load forecast</div>
+            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+              {error}
+            </div>
           </div>
         </div>
       ) : null}
 
-      <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
-        {forecast.map((day) => (
+      {forecast.length > 0 && (
+        <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
+          {forecast.map((day) => (
           <button
             key={day.id}
             onClick={() => onDaySelect(day)}
@@ -141,8 +123,9 @@ function WeeklyForecast({ onDaySelect }) {
               </div>
             </div>
           </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

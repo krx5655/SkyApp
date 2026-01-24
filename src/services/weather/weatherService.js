@@ -66,21 +66,15 @@ class WeatherService {
 
     // Fetch from API
     console.log('Fetching weekly forecast from API')
-    try {
-      const data = await this.adapter.getWeeklyForecast(
-        location.latitude,
-        location.longitude
-      )
+    const data = await this.adapter.getWeeklyForecast(
+      location.latitude,
+      location.longitude
+    )
 
-      // Cache the result
-      setCache(cacheKey, data, this.cacheTTL)
+    // Cache the result
+    setCache(cacheKey, data, this.cacheTTL)
 
-      return data
-    } catch (error) {
-      console.error('Failed to fetch weekly forecast:', error)
-      // Return mock data as fallback
-      return this.getMockWeeklyForecast()
-    }
+    return data
   }
 
   /**
@@ -103,22 +97,16 @@ class WeatherService {
 
     // Fetch from API
     console.log('Fetching hourly forecast from API')
-    try {
-      const data = await this.adapter.getHourlyForecast(
-        location.latitude,
-        location.longitude,
-        date
-      )
+    const data = await this.adapter.getHourlyForecast(
+      location.latitude,
+      location.longitude,
+      date
+    )
 
-      // Cache the result
-      setCache(cacheKey, data, this.cacheTTL)
+    // Cache the result
+    setCache(cacheKey, data, this.cacheTTL)
 
-      return data
-    } catch (error) {
-      console.error('Failed to fetch hourly forecast:', error)
-      // Return mock data as fallback
-      return this.getMockHourlyForecast()
-    }
+    return data
   }
 
   /**
@@ -138,20 +126,15 @@ class WeatherService {
     }
 
     // Fetch from API
-    try {
-      const data = await this.adapter.getCurrentWeather(
-        location.latitude,
-        location.longitude
-      )
+    const data = await this.adapter.getCurrentWeather(
+      location.latitude,
+      location.longitude
+    )
 
-      // Cache for 5 minutes
-      setCache(cacheKey, data, 5 * 60 * 1000)
+    // Cache for 5 minutes
+    setCache(cacheKey, data, 5 * 60 * 1000)
 
-      return data
-    } catch (error) {
-      console.error('Failed to fetch current weather:', error)
-      return null
-    }
+    return data
   }
 
   /**
@@ -172,21 +155,16 @@ class WeatherService {
     }
 
     // Fetch from API
-    try {
-      const data = await this.adapter.getWeatherDetails(
-        location.latitude,
-        location.longitude,
-        date
-      )
+    const data = await this.adapter.getWeatherDetails(
+      location.latitude,
+      location.longitude,
+      date
+    )
 
-      // Cache the result
-      setCache(cacheKey, data, this.cacheTTL)
+    // Cache the result
+    setCache(cacheKey, data, this.cacheTTL)
 
-      return data
-    } catch (error) {
-      console.error('Failed to fetch weather details:', error)
-      return this.getMockWeatherDetails()
-    }
+    return data
   }
 
   /**
