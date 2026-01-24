@@ -1,23 +1,53 @@
+import { useState, useEffect } from 'react'
 import { format, addDays } from 'date-fns'
+import weatherService from '../../services/weather/weatherService'
 
 function WeeklyForecast({ onDaySelect }) {
-  // Mock data for 7-day forecast
-  const mockForecast = Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(new Date(), i)
-    const conditions = ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Stormy']
-    const condition = conditions[Math.floor(Math.random() * conditions.length)]
+  const [forecast, setForecast] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-    return {
-      id: i,
-      date,
-      dayName: i === 0 ? 'Today' : format(date, 'EEEE'),
-      shortDate: format(date, 'MMM d'),
-      high: Math.floor(Math.random() * 20) + 65,
-      low: Math.floor(Math.random() * 20) + 45,
-      condition,
-      icon: getWeatherIcon(condition),
+  // Fetch weather data on mount
+  useEffect(() => {
+    async function fetchForecast() {
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await weatherService.getWeeklyForecast()
+        setForecast(data)
+      } catch (err) {
+        console.error('Failed to fetch forecast:', err)
+        setError(err.message)
+        // Fallback to mock data
+        setForecast(getMockForecast())
+      } finally {
+        setLoading(false)
+      }
     }
-  })
+
+    fetchForecast()
+  }, [])
+
+  // Mock data fallback
+  function getMockForecast() {
+    const conditions = ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Stormy']
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(new Date(), i)
+      const condition = conditions[Math.floor(Math.random() * conditions.length)]
+
+      return {
+        id: i.toString(),
+        date,
+        dayName: i === 0 ? 'Today' : format(date, 'EEEE'),
+        shortDate: format(date, 'MMM d'),
+        high: Math.floor(Math.random() * 20) + 65,
+        low: Math.floor(Math.random() * 20) + 45,
+        condition,
+        icon: getWeatherIcon(condition),
+      }
+    })
+  }
 
   function getWeatherIcon(condition) {
     switch (condition) {
@@ -68,8 +98,22 @@ function WeeklyForecast({ onDaySelect }) {
         </p>
       </div>
 
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-macos-text-secondary-light dark:text-macos-text-secondary">
+            Loading forecast...
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-red-500">
+            Failed to load forecast. Showing cached data.
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
-        {mockForecast.map((day) => (
+        {forecast.map((day) => (
           <button
             key={day.id}
             onClick={() => onDaySelect(day)}
@@ -81,8 +125,8 @@ function WeeklyForecast({ onDaySelect }) {
                 {day.shortDate}
               </div>
 
-              <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform">
-                {day.icon}
+              <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform text-4xl">
+                {typeof day.icon === 'string' ? day.icon : day.icon}
               </div>
 
               <div className="text-xs font-medium truncate">{day.condition}</div>
