@@ -176,13 +176,19 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
   const yAxisMax = maxTemp + 10
   const yAxisRange = yAxisMax - yAxisMin
 
-  // For graphing, we need to know the hour range
-  const minHour = hourlyData.length > 0 ? hourlyData[0].hour : 0
-  const maxHour = hourlyData.length > 0 ? hourlyData[hourlyData.length - 1].hour : 23
-  const hourRange = maxHour - minHour
+  // For graphing, always use full 0-23 hour range so partial data shows correctly
+  // with blank areas before/after the available data
+  const minHour = 0
+  const maxHour = 23
+  const hourRange = 23 // Full day range
+
+  // Track actual data bounds for display purposes
+  const dataMinHour = hourlyData.length > 0 ? hourlyData[0].hour : 0
+  const dataMaxHour = hourlyData.length > 0 ? hourlyData[hourlyData.length - 1].hour : 23
 
   console.log(`[DailyForecast] Hourly data points:`, hourlyData.length)
-  console.log(`[DailyForecast] Hour range: ${minHour} to ${maxHour}`)
+  console.log(`[DailyForecast] Data hour range: ${dataMinHour} to ${dataMaxHour}`)
+  console.log(`[DailyForecast] Graph hour range: ${minHour} to ${maxHour} (full day)`)
   console.log(`[DailyForecast] Temp range: ${minTemp}° to ${maxTemp}°`)
   console.log(`[DailyForecast] Y-axis range: ${yAxisMin}° to ${yAxisMax}°`)
 
@@ -191,27 +197,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
   const maxPrecip = allPrecip.length > 0 ? Math.max(...allPrecip) : 100
   const precipYMax = Math.ceil(maxPrecip / 20) * 20
 
-  // Calculate which hours to display on X-axis (roughly every 6 hours or evenly spaced)
-  const getDisplayHours = () => {
-    if (hourlyData.length === 0) return []
-
-    // For full day (24 hours), show: 0, 6, 12, 18
-    if (hourlyData.length >= 20) {
-      return [0, 6, 12, 18].filter(h => hourlyData.some(d => d.hour === h))
-    }
-
-    // For partial day, show first, middle, and last hours
-    const step = Math.max(1, Math.floor(hourlyData.length / 4))
-    return [
-      0,
-      step,
-      step * 2,
-      step * 3,
-      hourlyData.length - 1
-    ].map(i => hourlyData[i]?.hour).filter(h => h !== undefined)
-  }
-
-  const displayHours = getDisplayHours()
+  // Always show these hours on X-axis: 12AM, 6AM, 12PM, 6PM
+  const displayHours = [0, 6, 12, 18]
 
   return (
     <motion.div
@@ -282,9 +269,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
             <div className="relative flex mt-16">
               {/* Main graph area */}
               <div className="flex-1 relative" style={{ height: '240px' }}>
-                {/* Weather icons row - show at display hours */}
+                {/* Weather icons row - show at display hours where data exists */}
                 <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
-                  {displayHours.slice(0, 4).map((hour) => {
+                  {displayHours.map((hour) => {
                     const data = hourlyData.find(d => d.hour === hour)
                     return (
                       <div
@@ -293,7 +280,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                         title={data?.condition}
                         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
                       >
-                        {data?.icon || '☁️'}
+                        {data?.icon || ''}
                       </div>
                     )
                   })}
@@ -315,21 +302,25 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     const futureData = hourlyData.filter(d => !d.isPast)
 
                     const allPoints = hourlyData.map(data => ({
-                      x: ((data.hour - minHour) / hourRange) * 100,
+                      x: (data.hour / hourRange) * 100,
                       y: 200 - ((data.temp - yAxisMin) / yAxisRange * 200),
                       isPast: data.isPast
                     }))
 
+                    // Calculate start and end X positions for the gradient fill
+                    const startX = allPoints.length > 0 ? allPoints[0].x : 0
+                    const endX = allPoints.length > 0 ? allPoints[allPoints.length - 1].x : 100
+
                     return (
                       <>
-                        {/* Full gradient fill under curve */}
+                        {/* Gradient fill under curve - only where data exists */}
                         {allPoints.length > 0 && (
                           <path
                             d={`
-                              M 0,200
-                              L 0,${allPoints[0].y}
+                              M ${startX},200
+                              L ${startX},${allPoints[0].y}
                               ${generateSmoothPath(allPoints, 0.5).substring(1)}
-                              L 100,200 Z
+                              L ${endX},200 Z
                             `}
                             fill="url(#tempGradient)"
                             vectorEffect="non-scaling-stroke"
@@ -341,7 +332,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                           <path
                             d={generateSmoothPath(
                               pastData.map(data => ({
-                                x: ((data.hour - minHour) / hourRange) * 100,
+                                x: (data.hour / hourRange) * 100,
                                 y: 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
                               })),
                               0.5
@@ -359,7 +350,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                           <path
                             d={generateSmoothPath(
                               futureData.map(data => ({
-                                x: ((data.hour - minHour) / hourRange) * 100,
+                                x: (data.hour / hourRange) * 100,
                                 y: 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
                               })),
                               0.5
@@ -376,14 +367,14 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
 
 
 
-                  {/* Current time indicator - only if current hour is in range */}
-                  {isToday && currentHour >= minHour && currentHour <= maxHour && (
+                  {/* Current time indicator - always show for today */}
+                  {isToday && (
                     <>
                       {/* Vertical line */}
                       <line
-                        x1={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        x1={`${(currentHour / hourRange) * 100}%`}
                         y1="0"
-                        x2={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        x2={`${(currentHour / hourRange) * 100}%`}
                         y2="100%"
                         stroke="white"
                         strokeWidth="2"
@@ -392,7 +383,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                       />
                       {/* "Now" label */}
                       <text
-                        x={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        x={`${(currentHour / hourRange) * 100}%`}
                         y="10"
                         fill="white"
                         fontSize="10"
@@ -405,12 +396,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                   )}
                 </svg>
 
-                {/* Temperature labels - show at display hours */}
+                {/* Temperature labels - show at display hours where data exists */}
                 <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
                   {displayHours.map((hour) => {
                     const data = hourlyData.find(d => d.hour === hour)
                     if (!data) return null
-                    const x = ((data.hour - minHour) / hourRange) * 100
+                    const x = (data.hour / hourRange) * 100
                     const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
                     return (
                       <div
@@ -428,9 +419,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                   })}
                 </div>
 
-                {/* Hour labels at bottom - show at display hours */}
+                {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
                 <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
-                  {displayHours.slice(0, 4).map((hour) => {
+                  {displayHours.map((hour) => {
                     const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
                     return (
                       <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
@@ -464,9 +455,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
             <div className="relative flex mt-16">
               {/* Main graph area */}
               <div className="flex-1 relative" style={{ height: '240px' }}>
-                {/* Weather icons row - show at display hours */}
+                {/* Weather icons row - show at display hours where data exists */}
                 <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
-                  {displayHours.slice(0, 4).map((hour) => {
+                  {displayHours.map((hour) => {
                     const data = hourlyData.find(d => d.hour === hour)
                     return (
                       <div
@@ -475,7 +466,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                         title={data?.condition}
                         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
                       >
-                        {data?.icon || '☁️'}
+                        {data?.icon || ''}
                       </div>
                     )
                   })}
@@ -497,21 +488,25 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     const futureData = hourlyData.filter(d => !d.isPast)
 
                     const allPoints = hourlyData.map(data => ({
-                      x: ((data.hour - minHour) / hourRange) * 100,
+                      x: (data.hour / hourRange) * 100,
                       y: 200 - ((data.precipitation / 100) * 200),
                       isPast: data.isPast
                     }))
 
+                    // Calculate start and end X positions for the gradient fill
+                    const startX = allPoints.length > 0 ? allPoints[0].x : 0
+                    const endX = allPoints.length > 0 ? allPoints[allPoints.length - 1].x : 100
+
                     return (
                       <>
-                        {/* Full gradient fill under curve */}
+                        {/* Gradient fill under curve - only where data exists */}
                         {allPoints.length > 0 && (
                           <path
                             d={`
-                              M 0,200
-                              L 0,${allPoints[0].y}
+                              M ${startX},200
+                              L ${startX},${allPoints[0].y}
                               ${generateSmoothPath(allPoints, 0.5).substring(1)}
-                              L 100,200 Z
+                              L ${endX},200 Z
                             `}
                             fill="url(#precipGradient)"
                             vectorEffect="non-scaling-stroke"
@@ -523,7 +518,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                           <path
                             d={generateSmoothPath(
                               pastData.map(data => ({
-                                x: ((data.hour - minHour) / hourRange) * 100,
+                                x: (data.hour / hourRange) * 100,
                                 y: 200 - ((data.precipitation / 100) * 200)
                               })),
                               0.5
@@ -541,7 +536,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                           <path
                             d={generateSmoothPath(
                               futureData.map(data => ({
-                                x: ((data.hour - minHour) / hourRange) * 100,
+                                x: (data.hour / hourRange) * 100,
                                 y: 200 - ((data.precipitation / 100) * 200)
                               })),
                               0.5
@@ -556,11 +551,11 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     )
                   })()}
 
-                  {/* Dots at display hours */}
+                  {/* Dots at display hours where data exists */}
                   {displayHours.map((hour) => {
                     const data = hourlyData.find(d => d.hour === hour)
                     if (!data) return null
-                    const x = ((data.hour - minHour) / hourRange) * 100
+                    const x = (data.hour / hourRange) * 100
                     const y = 200 - ((data.precipitation / 100) * 200)
                     return (
                       <circle
@@ -575,14 +570,14 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     )
                   })}
 
-                  {/* Current time indicator - only if current hour is in range */}
-                  {isToday && currentHour >= minHour && currentHour <= maxHour && (
+                  {/* Current time indicator - always show for today */}
+                  {isToday && (
                     <>
                       {/* Vertical line */}
                       <line
-                        x1={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        x1={`${(currentHour / hourRange) * 100}%`}
                         y1="0"
-                        x2={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        x2={`${(currentHour / hourRange) * 100}%`}
                         y2="100%"
                         stroke="white"
                         strokeWidth="2"
@@ -591,7 +586,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                       />
                       {/* "Now" label */}
                       <text
-                        x={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        x={`${(currentHour / hourRange) * 100}%`}
                         y="10"
                         fill="white"
                         fontSize="10"
@@ -604,12 +599,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                   )}
                 </svg>
 
-                {/* Precipitation labels - show at display hours */}
+                {/* Precipitation labels - show at display hours where data exists */}
                 <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
                   {displayHours.map((hour) => {
                     const data = hourlyData.find(d => d.hour === hour)
                     if (!data) return null
-                    const x = ((data.hour - minHour) / hourRange) * 100
+                    const x = (data.hour / hourRange) * 100
                     const y = 200 - ((data.precipitation / 100) * 200)
                     return (
                       <div
@@ -627,9 +622,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                   })}
                 </div>
 
-                {/* Hour labels at bottom - show at display hours */}
+                {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
                 <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
-                  {displayHours.slice(0, 4).map((hour) => {
+                  {displayHours.map((hour) => {
                     const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
                     return (
                       <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
