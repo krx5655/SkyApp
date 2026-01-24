@@ -141,54 +141,55 @@ function DailyForecast({ selectedDay }) {
 
       {/* Grid Container - 12 columns */}
       {hourlyData.length > 0 && (
-      <div className="grid grid-cols-12 gap-4">
-        {/* Temperature Graph - 6/12 columns (50%) */}
-        <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
-          {/* Temperature overlay in top-left */}
-          <div className="absolute top-6 left-6 z-10">
-            {isToday && currentWeather ? (
-              <>
-                <div className="text-4xl font-bold">{currentWeather.temp}°</div>
-                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                  H: {displayHigh}° L: {displayLow}°
+        <div className="grid grid-cols-12 gap-4">
+          {/* Temperature Graph - 6/12 columns (50%) */}
+          <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
+            {/* Temperature overlay in top-left */}
+            <div className="absolute top-6 left-6 z-10">
+              {isToday && currentWeather ? (
+                <>
+                  <div className="text-3xl font-bold">{currentWeather.temp}°</div>
+                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                    H: {displayHigh}° L: {displayLow}°
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold">
+                    H: {displayHigh}° L: {displayLow}°
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Graph container */}
+            <div className="relative flex mt-16">
+              {/* Main graph area */}
+              <div className="flex-1 relative" style={{ height: '240px' }}>
+                {/* Weather icons row - show at display hours */}
+                <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
+                  {displayHours.slice(0, 4).map((hour) => {
+                    const data = hourlyData.find(d => d.hour === hour)
+                    return (
+                      <div key={hour} className="text-lg flex-1 text-center">
+                        {data?.condition || ''}
+                      </div>
+                    )
+                  })}
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="text-4xl font-bold">H: {displayHigh}°</div>
-                <div className="text-4xl font-bold">L: {displayLow}°</div>
-              </>
-            )}
-          </div>
 
-          {/* Graph container */}
-          <div className="relative flex mt-16">
-            {/* Main graph area */}
-            <div className="flex-1 relative" style={{ height: '240px' }}>
-              {/* Weather icons row - show at display hours */}
-              <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
-                {displayHours.slice(0, 4).map((hour) => {
-                  const data = hourlyData.find(d => d.hour === hour)
-                  return (
-                    <div key={hour} className="text-lg flex-1 text-center">
-                      {data?.condition || ''}
-                    </div>
-                  )
-                })}
-              </div>
+                {/* SVG for line chart and gradient */}
+                <svg className="absolute top-8 left-0 right-12 bottom-8" width="100%" height="calc(100% - 64px)" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="tempGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="rgb(59, 130, 246)" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.1" />
+                    </linearGradient>
+                  </defs>
 
-              {/* SVG for line chart and gradient */}
-              <svg className="absolute top-8 left-0 right-12 bottom-8" width="100%" height="calc(100% - 64px)" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="tempGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="rgb(59, 130, 246)" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.1" />
-                  </linearGradient>
-                </defs>
-
-                {/* Create path for gradient fill */}
-                <path
-                  d={`
+                  {/* Create path for gradient fill */}
+                  <path
+                    d={`
                     M 0,${200 - ((hourlyData[0].temp - yAxisMin) / yAxisRange * 200)}
                     ${hourlyData.map((data, i) => {
                       const x = ((data.hour - minHour) / hourRange) * 100
@@ -197,139 +198,122 @@ function DailyForecast({ selectedDay }) {
                     }).join(' ')}
                     L 100,200 L 0,200 Z
                   `}
-                  fill="url(#tempGradient)"
-                  vectorEffect="non-scaling-stroke"
-                />
+                    fill="url(#tempGradient)"
+                    vectorEffect="non-scaling-stroke"
+                  />
 
-                {/* Line connecting points */}
-                <polyline
-                  points={hourlyData.map((data, i) => {
+                  {/* Line connecting points */}
+                  <polyline
+                    points={hourlyData.map((data, i) => {
+                      const x = ((data.hour - minHour) / hourRange) * 100
+                      const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
+                      return `${x},${y}`
+                    }).join(' ')}
+                    fill="none"
+                    stroke="rgb(59, 130, 246)"
+                    strokeWidth="2"
+                    vectorEffect="non-scaling-stroke"
+                  />
+
+
+
+                  {/* Current time indicator - only if current hour is in range */}
+                  {isToday && currentHour >= minHour && currentHour <= maxHour && (
+                    <line
+                      x1={`${((currentHour - minHour) / hourRange) * 100}%`}
+                      y1="0"
+                      x2={`${((currentHour - minHour) / hourRange) * 100}%`}
+                      y2="100%"
+                      stroke="white"
+                      strokeWidth="1"
+                      opacity="0.5"
+                    />
+                  )}
+                </svg>
+
+                {/* Temperature labels - show at display hours */}
+                <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
+                  {displayHours.map((hour) => {
+                    const data = hourlyData.find(d => d.hour === hour)
+                    if (!data) return null
                     const x = ((data.hour - minHour) / hourRange) * 100
                     const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
-                    return `${x},${y}`
-                  }).join(' ')}
-                  fill="none"
-                  stroke="rgb(59, 130, 246)"
-                  strokeWidth="2"
-                  vectorEffect="non-scaling-stroke"
-                />
+                    return (
+                      <div
+                        key={hour}
+                        className="absolute text-xs font-semibold"
+                        style={{
+                          left: `${x}%`,
+                          top: `${(y / 200) * 100}%`,
+                          transform: 'translate(-50%, -20px)',
+                        }}
+                      >
+                        {data.temp}°
+                      </div>
+                    )
+                  })}
+                </div>
 
-                {/* Dots at display hours */}
-                {displayHours.map((hour) => {
-                  const data = hourlyData.find(d => d.hour === hour)
-                  if (!data) return null
-                  const x = ((data.hour - minHour) / hourRange) * 100
-                  const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
-                  return (
-                    <circle
-                      key={hour}
-                      cx={`${x}%`}
-                      cy={`${y}%`}
-                      r="3"
-                      fill="white"
-                      stroke="rgb(59, 130, 246)"
-                      strokeWidth="2"
-                    />
-                  )
-                })}
-
-                {/* Current time indicator - only if current hour is in range */}
-                {isToday && currentHour >= minHour && currentHour <= maxHour && (
-                  <line
-                    x1={`${((currentHour - minHour) / hourRange) * 100}%`}
-                    y1="0"
-                    x2={`${((currentHour - minHour) / hourRange) * 100}%`}
-                    y2="100%"
-                    stroke="white"
-                    strokeWidth="1"
-                    opacity="0.5"
-                  />
-                )}
-              </svg>
-
-              {/* Temperature labels - show at display hours */}
-              <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
-                {displayHours.map((hour) => {
-                  const data = hourlyData.find(d => d.hour === hour)
-                  if (!data) return null
-                  const x = ((data.hour - minHour) / hourRange) * 100
-                  const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
-                  return (
-                    <div
-                      key={hour}
-                      className="absolute text-xs font-semibold"
-                      style={{
-                        left: `${x}%`,
-                        top: `${(y / 200) * 100}%`,
-                        transform: 'translate(-50%, -20px)',
-                      }}
-                    >
-                      {data.temp}°
-                    </div>
-                  )
-                })}
+                {/* Hour labels at bottom - show at display hours */}
+                <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
+                  {displayHours.slice(0, 4).map((hour) => {
+                    const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
+                    return (
+                      <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
+                        {label}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* Hour labels at bottom - show at display hours */}
-              <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
-                {displayHours.slice(0, 4).map((hour) => {
-                  const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
-                  return (
-                    <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-                      {label}
-                    </div>
-                  )
-                })}
+              {/* Y-axis temperature scale */}
+              <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary py-8">
+                <div>{yAxisMax}°</div>
+                <div>{Math.floor((yAxisMax + yAxisMin) / 2)}°</div>
+                <div>{yAxisMin}°</div>
               </div>
-            </div>
-
-            {/* Y-axis temperature scale */}
-            <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary py-8">
-              <div>{yAxisMax}°</div>
-              <div>{Math.floor((yAxisMax + yAxisMin) / 2)}°</div>
-              <div>{yAxisMin}°</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Precipitation Graph - 6/12 columns (50%) */}
-        <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
-          {/* Precipitation title overlay in top-left */}
-          <div className="absolute top-6 left-6 z-10">
-            <div className="text-2xl font-bold">Precipitation</div>
-            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-              {isToday ? `${hourlyData.length}-hour forecast` : '24-hour forecast'}
             </div>
           </div>
 
-          {/* Graph container */}
-          <div className="relative flex mt-16">
-            {/* Main graph area */}
-            <div className="flex-1 relative" style={{ height: '240px' }}>
-              {/* Weather icons row - show at display hours */}
-              <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
-                {displayHours.slice(0, 4).map((hour) => {
-                  const data = hourlyData.find(d => d.hour === hour)
-                  return (
-                    <div key={hour} className="text-lg flex-1 text-center">
-                      {data?.condition || ''}
-                    </div>
-                  )
-                })}
+          {/* Precipitation Graph - 6/12 columns (50%) */}
+          <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
+            {/* Precipitation title overlay in top-left */}
+            <div className="absolute top-6 left-6 z-10">
+              <div className="text-2xl font-bold">Precipitation</div>
+              <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                {isToday ? `${hourlyData.length}-hour forecast` : '24-hour forecast'}
               </div>
+            </div>
 
-              {/* SVG for line chart and gradient */}
-              <svg className="absolute top-8 left-0 right-12 bottom-8" width="100%" height="calc(100% - 64px)" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="precipGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="rgb(6, 182, 212)" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="rgb(6, 182, 212)" stopOpacity="0.1" />
-                  </linearGradient>
-                </defs>
+            {/* Graph container */}
+            <div className="relative flex mt-16">
+              {/* Main graph area */}
+              <div className="flex-1 relative" style={{ height: '240px' }}>
+                {/* Weather icons row - show at display hours */}
+                <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
+                  {displayHours.slice(0, 4).map((hour) => {
+                    const data = hourlyData.find(d => d.hour === hour)
+                    return (
+                      <div key={hour} className="text-lg flex-1 text-center">
+                        {data?.condition || ''}
+                      </div>
+                    )
+                  })}
+                </div>
 
-                {/* Create path for gradient fill */}
-                <path
-                  d={`
+                {/* SVG for line chart and gradient */}
+                <svg className="absolute top-8 left-0 right-12 bottom-8" width="100%" height="calc(100% - 64px)" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="precipGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="rgb(6, 182, 212)" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="rgb(6, 182, 212)" stopOpacity="0.1" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Create path for gradient fill */}
+                  <path
+                    d={`
                     M 0,${200 - ((hourlyData[0].precipitation / 100) * 200)}
                     ${hourlyData.map((data, i) => {
                       const x = ((data.hour - minHour) / hourRange) * 100
@@ -338,101 +322,101 @@ function DailyForecast({ selectedDay }) {
                     }).join(' ')}
                     L 100,200 L 0,200 Z
                   `}
-                  fill="url(#precipGradient)"
-                  vectorEffect="non-scaling-stroke"
-                />
+                    fill="url(#precipGradient)"
+                    vectorEffect="non-scaling-stroke"
+                  />
 
-                {/* Line connecting points */}
-                <polyline
-                  points={hourlyData.map((data, i) => {
+                  {/* Line connecting points */}
+                  <polyline
+                    points={hourlyData.map((data, i) => {
+                      const x = ((data.hour - minHour) / hourRange) * 100
+                      const y = 200 - ((data.precipitation / 100) * 200)
+                      return `${x},${y}`
+                    }).join(' ')}
+                    fill="none"
+                    stroke="rgb(6, 182, 212)"
+                    strokeWidth="2"
+                    vectorEffect="non-scaling-stroke"
+                  />
+
+                  {/* Dots at display hours */}
+                  {displayHours.map((hour) => {
+                    const data = hourlyData.find(d => d.hour === hour)
+                    if (!data) return null
                     const x = ((data.hour - minHour) / hourRange) * 100
                     const y = 200 - ((data.precipitation / 100) * 200)
-                    return `${x},${y}`
-                  }).join(' ')}
-                  fill="none"
-                  stroke="rgb(6, 182, 212)"
-                  strokeWidth="2"
-                  vectorEffect="non-scaling-stroke"
-                />
+                    return (
+                      <circle
+                        key={hour}
+                        cx={`${x}%`}
+                        cy={`${y}%`}
+                        r="3"
+                        fill="white"
+                        stroke="rgb(6, 182, 212)"
+                        strokeWidth="2"
+                      />
+                    )
+                  })}
 
-                {/* Dots at display hours */}
-                {displayHours.map((hour) => {
-                  const data = hourlyData.find(d => d.hour === hour)
-                  if (!data) return null
-                  const x = ((data.hour - minHour) / hourRange) * 100
-                  const y = 200 - ((data.precipitation / 100) * 200)
-                  return (
-                    <circle
-                      key={hour}
-                      cx={`${x}%`}
-                      cy={`${y}%`}
-                      r="3"
-                      fill="white"
-                      stroke="rgb(6, 182, 212)"
-                      strokeWidth="2"
+                  {/* Current time indicator - only if current hour is in range */}
+                  {isToday && currentHour >= minHour && currentHour <= maxHour && (
+                    <line
+                      x1={`${((currentHour - minHour) / hourRange) * 100}%`}
+                      y1="0"
+                      x2={`${((currentHour - minHour) / hourRange) * 100}%`}
+                      y2="100%"
+                      stroke="white"
+                      strokeWidth="1"
+                      opacity="0.5"
                     />
-                  )
-                })}
+                  )}
+                </svg>
 
-                {/* Current time indicator - only if current hour is in range */}
-                {isToday && currentHour >= minHour && currentHour <= maxHour && (
-                  <line
-                    x1={`${((currentHour - minHour) / hourRange) * 100}%`}
-                    y1="0"
-                    x2={`${((currentHour - minHour) / hourRange) * 100}%`}
-                    y2="100%"
-                    stroke="white"
-                    strokeWidth="1"
-                    opacity="0.5"
-                  />
-                )}
-              </svg>
+                {/* Precipitation labels - show at display hours */}
+                <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
+                  {displayHours.map((hour) => {
+                    const data = hourlyData.find(d => d.hour === hour)
+                    if (!data) return null
+                    const x = ((data.hour - minHour) / hourRange) * 100
+                    const y = 200 - ((data.precipitation / 100) * 200)
+                    return (
+                      <div
+                        key={hour}
+                        className="absolute text-xs font-semibold"
+                        style={{
+                          left: `${x}%`,
+                          top: `${(y / 200) * 100}%`,
+                          transform: 'translate(-50%, -20px)',
+                        }}
+                      >
+                        {data.precipitation}%
+                      </div>
+                    )
+                  })}
+                </div>
 
-              {/* Precipitation labels - show at display hours */}
-              <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
-                {displayHours.map((hour) => {
-                  const data = hourlyData.find(d => d.hour === hour)
-                  if (!data) return null
-                  const x = ((data.hour - minHour) / hourRange) * 100
-                  const y = 200 - ((data.precipitation / 100) * 200)
-                  return (
-                    <div
-                      key={hour}
-                      className="absolute text-xs font-semibold"
-                      style={{
-                        left: `${x}%`,
-                        top: `${(y / 200) * 100}%`,
-                        transform: 'translate(-50%, -20px)',
-                      }}
-                    >
-                      {data.precipitation}%
-                    </div>
-                  )
-                })}
+                {/* Hour labels at bottom - show at display hours */}
+                <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
+                  {displayHours.slice(0, 4).map((hour) => {
+                    const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
+                    return (
+                      <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
+                        {label}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* Hour labels at bottom - show at display hours */}
-              <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
-                {displayHours.slice(0, 4).map((hour) => {
-                  const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
-                  return (
-                    <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-                      {label}
-                    </div>
-                  )
-                })}
+              {/* Y-axis precipitation scale */}
+              <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary py-8">
+                <div>100%</div>
+                <div>50%</div>
+                <div>0%</div>
               </div>
-            </div>
-
-            {/* Y-axis precipitation scale */}
-            <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary py-8">
-              <div>100%</div>
-              <div>50%</div>
-              <div>0%</div>
             </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Grid Container for smaller cards */}
@@ -443,12 +427,12 @@ function DailyForecast({ selectedDay }) {
             <h3 className="text-lg font-semibold mb-4">Weather Details</h3>
             <div className="space-y-4">
               {Object.entries(weatherDetails).map(([key, value]) => (
-              <div key={key} className="flex flex-col">
-                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary capitalize mb-1">
-                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                <div key={key} className="flex flex-col">
+                  <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary capitalize mb-1">
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </div>
+                  <div className="text-lg font-semibold">{value}</div>
                 </div>
-                <div className="text-lg font-semibold">{value}</div>
-              </div>
               ))}
             </div>
           </div>
