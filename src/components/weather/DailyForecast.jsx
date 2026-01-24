@@ -369,6 +369,7 @@ function DailyForecast({ selectedDay }) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Grid Container for smaller cards */}
       {weatherDetails && (
@@ -400,8 +401,6 @@ function DailyForecast({ selectedDay }) {
             in the afternoon. Light winds from the northwest.
           </p>
         </div>
-      )}
-
       )}
     </div>
   )
