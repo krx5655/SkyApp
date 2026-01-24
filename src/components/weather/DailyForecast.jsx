@@ -1,13 +1,110 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import { motion, useAnimation } from 'framer-motion'
 import weatherService from '../../services/weather/weatherService'
 
-function DailyForecast({ selectedDay }) {
+/**
+ * Generate smooth curve path using Catmull-Rom spline
+ * @param {Array} points - Array of {x, y} coordinates
+ * @param {number} tension - 0 (straight) to 1 (very curved), default 0.5
+ * @returns {string} SVG path string
+ */
+function generateSmoothPath(points, tension = 0.5) {
+  if (points.length < 2) return ''
+
+  // Start at first point
+  let path = `M ${points[0].x},${points[0].y}`
+
+  // For curves, we need at least 3 points
+  if (points.length === 2) {
+    return path + ` L ${points[1].x},${points[1].y}`
+  }
+
+  // Generate smooth curve through points using Catmull-Rom spline
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)]
+    const p1 = points[i]
+    const p2 = points[i + 1]
+    const p3 = points[Math.min(i + 2, points.length - 1)]
+
+    // Calculate control points for cubic bezier
+    const cp1x = p1.x + (p2.x - p0.x) / 6 * tension
+    const cp1y = p1.y + (p2.y - p0.y) / 6 * tension
+    const cp2x = p2.x - (p3.x - p1.x) / 6 * tension
+    const cp2y = p2.y - (p3.y - p1.y) / 6 * tension
+
+    path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`
+  }
+
+  return path
+}
+
+function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
   const [hourlyData, setHourlyData] = useState([])
   const [weatherDetails, setWeatherDetails] = useState(null)
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const controls = useAnimation()
+
+  // Get next and previous days for swipe navigation
+  const getCurrentDayIndex = () => {
+    if (!selectedDay || !forecastData.length) return -1
+    return forecastData.findIndex(day =>
+      new Date(day.date).toDateString() === new Date(selectedDay.date).toDateString()
+    )
+  }
+
+  const getNextDay = () => {
+    const currentIndex = getCurrentDayIndex()
+    if (currentIndex === -1 || currentIndex >= forecastData.length - 1) return null
+    return forecastData[currentIndex + 1]
+  }
+
+  const getPreviousDay = () => {
+    const currentIndex = getCurrentDayIndex()
+    if (currentIndex === -1 || currentIndex <= 0) return null
+    return forecastData[currentIndex - 1]
+  }
+
+  // Handle swipe/drag end
+  const handleDragEnd = (event, info) => {
+    const swipeThreshold = 50 // pixels
+    const swipeVelocity = 0.5 // velocity threshold
+
+    if (info.offset.x > swipeThreshold || info.velocity.x > swipeVelocity) {
+      // Swipe right -> previous day
+      const prevDay = getPreviousDay()
+      if (prevDay && onNavigateDay) {
+        controls.start({ x: window.innerWidth, opacity: 0, transition: { duration: 0.3 } })
+          .then(() => {
+            onNavigateDay(prevDay)
+            controls.set({ x: -window.innerWidth })
+            controls.start({ x: 0, opacity: 1, transition: { duration: 0.3 } })
+          })
+      } else {
+        // Bounce back - can't go earlier
+        controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } })
+      }
+    } else if (info.offset.x < -swipeThreshold || info.velocity.x < -swipeVelocity) {
+      // Swipe left -> next day
+      const nextDay = getNextDay()
+      if (nextDay && onNavigateDay) {
+        controls.start({ x: -window.innerWidth, opacity: 0, transition: { duration: 0.3 } })
+          .then(() => {
+            onNavigateDay(nextDay)
+            controls.set({ x: window.innerWidth })
+            controls.start({ x: 0, opacity: 1, transition: { duration: 0.3 } })
+          })
+      } else {
+        // Bounce back - can't go later
+        controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } })
+      }
+    } else {
+      // Snap back to center
+      controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } })
+    }
+  }
 
   // Fetch hourly data and weather details when selectedDay changes
   useEffect(() => {
@@ -108,7 +205,17 @@ function DailyForecast({ selectedDay }) {
   const displayHours = getDisplayHours()
 
   return (
-    <div className="p-6 space-y-6">
+    <motion.div
+      className="p-6 space-y-6 touch-pan-y"
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.2}
+      dragDirectionLock
+      onDragEnd={handleDragEnd}
+      animate={controls}
+      initial={{ x: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    >
       {/* Header */}
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-2">
@@ -171,8 +278,13 @@ function DailyForecast({ selectedDay }) {
                   {displayHours.slice(0, 4).map((hour) => {
                     const data = hourlyData.find(d => d.hour === hour)
                     return (
-                      <div key={hour} className="text-lg flex-1 text-center">
-                        {data?.condition || ''}
+                      <div
+                        key={hour}
+                        className="text-2xl flex-1 text-center drop-shadow-md"
+                        title={data?.condition}
+                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+                      >
+                        {data?.icon || '☁️'}
                       </div>
                     )
                   })}
@@ -187,47 +299,100 @@ function DailyForecast({ selectedDay }) {
                     </linearGradient>
                   </defs>
 
-                  {/* Create path for gradient fill */}
-                  <path
-                    d={`
-                    M 0,${200 - ((hourlyData[0].temp - yAxisMin) / yAxisRange * 200)}
-                    ${hourlyData.map((data, i) => {
-                      const x = ((data.hour - minHour) / hourRange) * 100
-                      const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
-                      return `L ${x},${y}`
-                    }).join(' ')}
-                    L 100,200 L 0,200 Z
-                  `}
-                    fill="url(#tempGradient)"
-                    vectorEffect="non-scaling-stroke"
-                  />
+                  {/* Create smooth curve points */}
+                  {(() => {
+                    // Split data into past and future
+                    const pastData = hourlyData.filter(d => d.isPast)
+                    const futureData = hourlyData.filter(d => !d.isPast)
 
-                  {/* Line connecting points */}
-                  <polyline
-                    points={hourlyData.map((data, i) => {
-                      const x = ((data.hour - minHour) / hourRange) * 100
-                      const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
-                      return `${x},${y}`
-                    }).join(' ')}
-                    fill="none"
-                    stroke="rgb(59, 130, 246)"
-                    strokeWidth="2"
-                    vectorEffect="non-scaling-stroke"
-                  />
+                    const allPoints = hourlyData.map(data => ({
+                      x: ((data.hour - minHour) / hourRange) * 100,
+                      y: 200 - ((data.temp - yAxisMin) / yAxisRange * 200),
+                      isPast: data.isPast
+                    }))
+
+                    return (
+                      <>
+                        {/* Full gradient fill under curve */}
+                        {allPoints.length > 0 && (
+                          <path
+                            d={`
+                              M 0,200
+                              L 0,${allPoints[0].y}
+                              ${generateSmoothPath(allPoints, 0.5).substring(1)}
+                              L 100,200 Z
+                            `}
+                            fill="url(#tempGradient)"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        )}
+
+                        {/* Past hours - translucent line */}
+                        {pastData.length > 0 && (
+                          <path
+                            d={generateSmoothPath(
+                              pastData.map(data => ({
+                                x: ((data.hour - minHour) / hourRange) * 100,
+                                y: 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
+                              })),
+                              0.5
+                            )}
+                            fill="none"
+                            stroke="rgb(59, 130, 246)"
+                            strokeWidth="2"
+                            opacity="0.3"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        )}
+
+                        {/* Future hours - normal line */}
+                        {futureData.length > 0 && (
+                          <path
+                            d={generateSmoothPath(
+                              futureData.map(data => ({
+                                x: ((data.hour - minHour) / hourRange) * 100,
+                                y: 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
+                              })),
+                              0.5
+                            )}
+                            fill="none"
+                            stroke="rgb(59, 130, 246)"
+                            strokeWidth="2"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        )}
+                      </>
+                    )
+                  })()}
 
 
 
                   {/* Current time indicator - only if current hour is in range */}
                   {isToday && currentHour >= minHour && currentHour <= maxHour && (
-                    <line
-                      x1={`${((currentHour - minHour) / hourRange) * 100}%`}
-                      y1="0"
-                      x2={`${((currentHour - minHour) / hourRange) * 100}%`}
-                      y2="100%"
-                      stroke="white"
-                      strokeWidth="1"
-                      opacity="0.5"
-                    />
+                    <>
+                      {/* Vertical line */}
+                      <line
+                        x1={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        y1="0"
+                        x2={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        y2="100%"
+                        stroke="white"
+                        strokeWidth="2"
+                        opacity="0.8"
+                        strokeDasharray="4 4"
+                      />
+                      {/* "Now" label */}
+                      <text
+                        x={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        y="10"
+                        fill="white"
+                        fontSize="10"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                      >
+                        Now
+                      </text>
+                    </>
                   )}
                 </svg>
 
@@ -295,8 +460,13 @@ function DailyForecast({ selectedDay }) {
                   {displayHours.slice(0, 4).map((hour) => {
                     const data = hourlyData.find(d => d.hour === hour)
                     return (
-                      <div key={hour} className="text-lg flex-1 text-center">
-                        {data?.condition || ''}
+                      <div
+                        key={hour}
+                        className="text-2xl flex-1 text-center drop-shadow-md"
+                        title={data?.condition}
+                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+                      >
+                        {data?.icon || '☁️'}
                       </div>
                     )
                   })}
@@ -311,33 +481,71 @@ function DailyForecast({ selectedDay }) {
                     </linearGradient>
                   </defs>
 
-                  {/* Create path for gradient fill */}
-                  <path
-                    d={`
-                    M 0,${200 - ((hourlyData[0].precipitation / 100) * 200)}
-                    ${hourlyData.map((data, i) => {
-                      const x = ((data.hour - minHour) / hourRange) * 100
-                      const y = 200 - ((data.precipitation / 100) * 200)
-                      return `L ${x},${y}`
-                    }).join(' ')}
-                    L 100,200 L 0,200 Z
-                  `}
-                    fill="url(#precipGradient)"
-                    vectorEffect="non-scaling-stroke"
-                  />
+                  {/* Create smooth curve points */}
+                  {(() => {
+                    // Split data into past and future
+                    const pastData = hourlyData.filter(d => d.isPast)
+                    const futureData = hourlyData.filter(d => !d.isPast)
 
-                  {/* Line connecting points */}
-                  <polyline
-                    points={hourlyData.map((data, i) => {
-                      const x = ((data.hour - minHour) / hourRange) * 100
-                      const y = 200 - ((data.precipitation / 100) * 200)
-                      return `${x},${y}`
-                    }).join(' ')}
-                    fill="none"
-                    stroke="rgb(6, 182, 212)"
-                    strokeWidth="2"
-                    vectorEffect="non-scaling-stroke"
-                  />
+                    const allPoints = hourlyData.map(data => ({
+                      x: ((data.hour - minHour) / hourRange) * 100,
+                      y: 200 - ((data.precipitation / 100) * 200),
+                      isPast: data.isPast
+                    }))
+
+                    return (
+                      <>
+                        {/* Full gradient fill under curve */}
+                        {allPoints.length > 0 && (
+                          <path
+                            d={`
+                              M 0,200
+                              L 0,${allPoints[0].y}
+                              ${generateSmoothPath(allPoints, 0.5).substring(1)}
+                              L 100,200 Z
+                            `}
+                            fill="url(#precipGradient)"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        )}
+
+                        {/* Past hours - translucent line */}
+                        {pastData.length > 0 && (
+                          <path
+                            d={generateSmoothPath(
+                              pastData.map(data => ({
+                                x: ((data.hour - minHour) / hourRange) * 100,
+                                y: 200 - ((data.precipitation / 100) * 200)
+                              })),
+                              0.5
+                            )}
+                            fill="none"
+                            stroke="rgb(6, 182, 212)"
+                            strokeWidth="2"
+                            opacity="0.3"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        )}
+
+                        {/* Future hours - normal line */}
+                        {futureData.length > 0 && (
+                          <path
+                            d={generateSmoothPath(
+                              futureData.map(data => ({
+                                x: ((data.hour - minHour) / hourRange) * 100,
+                                y: 200 - ((data.precipitation / 100) * 200)
+                              })),
+                              0.5
+                            )}
+                            fill="none"
+                            stroke="rgb(6, 182, 212)"
+                            strokeWidth="2"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        )}
+                      </>
+                    )
+                  })()}
 
                   {/* Dots at display hours */}
                   {displayHours.map((hour) => {
@@ -360,15 +568,30 @@ function DailyForecast({ selectedDay }) {
 
                   {/* Current time indicator - only if current hour is in range */}
                   {isToday && currentHour >= minHour && currentHour <= maxHour && (
-                    <line
-                      x1={`${((currentHour - minHour) / hourRange) * 100}%`}
-                      y1="0"
-                      x2={`${((currentHour - minHour) / hourRange) * 100}%`}
-                      y2="100%"
-                      stroke="white"
-                      strokeWidth="1"
-                      opacity="0.5"
-                    />
+                    <>
+                      {/* Vertical line */}
+                      <line
+                        x1={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        y1="0"
+                        x2={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        y2="100%"
+                        stroke="white"
+                        strokeWidth="2"
+                        opacity="0.8"
+                        strokeDasharray="4 4"
+                      />
+                      {/* "Now" label */}
+                      <text
+                        x={`${((currentHour - minHour) / hourRange) * 100}%`}
+                        y="10"
+                        fill="white"
+                        fontSize="10"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                      >
+                        Now
+                      </text>
+                    </>
                   )}
                 </svg>
 
@@ -450,7 +673,7 @@ function DailyForecast({ selectedDay }) {
           </p>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }
 

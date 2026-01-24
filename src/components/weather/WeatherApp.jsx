@@ -11,10 +11,21 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
   const [currentScreen, setCurrentScreen] = useState('forecast') // 'forecast', 'radar', 'space'
   const [forecastView, setForecastView] = useState('weekly') // 'weekly', 'daily'
   const [selectedDay, setSelectedDay] = useState(null)
+  const [forecastData, setForecastData] = useState([]) // Store forecast data for navigation
 
   const handleDaySelect = (day) => {
     setSelectedDay(day)
     setForecastView('daily')
+  }
+
+  // Handle day navigation for swipe gestures
+  const handleNavigateDay = (day) => {
+    setSelectedDay(day)
+  }
+
+  // Callback to receive forecast data from WeeklyForecast
+  const handleForecastLoaded = (forecast) => {
+    setForecastData(forecast)
   }
 
   const footerButtons = [
@@ -60,10 +71,18 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
         {currentScreen === 'forecast' && (
           <>
             {forecastView === 'weekly' && (
-              <WeeklyForecast onDaySelect={handleDaySelect} refreshTrigger={refreshTrigger} />
+              <WeeklyForecast
+                onDaySelect={handleDaySelect}
+                onForecastLoaded={handleForecastLoaded}
+                refreshTrigger={refreshTrigger}
+              />
             )}
             {forecastView === 'daily' && (
-              <DailyForecast selectedDay={selectedDay} />
+              <DailyForecast
+                selectedDay={selectedDay}
+                forecastData={forecastData}
+                onNavigateDay={handleNavigateDay}
+              />
             )}
           </>
         )}

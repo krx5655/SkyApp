@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { searchCities } from '../../services/geocoding/geocodingService'
 import weatherService from '../../services/weather/weatherService'
 import { clearAllCache } from '../../services/weather/cache'
+import { getOpenWeatherApiKey, setOpenWeatherApiKey } from '../../services/weather/config'
 
 function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [citySearch, setCitySearch] = useState('')
@@ -9,11 +10,20 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [searching, setSearching] = useState(false)
   const [currentLocation, setCurrentLocation] = useState(null)
   const [updatingLocation, setUpdatingLocation] = useState(false)
+  const [apiKey, setApiKey] = useState('')
+  const [apiKeyStatus, setApiKeyStatus] = useState('')
 
-  // Load current location
+  // Load current location and API key
   useEffect(() => {
     const location = weatherService.getLocation()
     setCurrentLocation(location)
+
+    // Load saved API key
+    const savedKey = getOpenWeatherApiKey()
+    if (savedKey) {
+      setApiKey(savedKey)
+      setApiKeyStatus('saved')
+    }
   }, [])
 
   // Search cities
@@ -43,7 +53,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   async function selectLocation(location) {
     setUpdatingLocation(true)
     weatherService.setLocation(location.latitude, location.longitude)
-    setCurrentLocation({ latitude: location.latitude, longitude: location.longitude, name: location.city })
+    setCurrentLocation({ latitude: location.latitude, longitude: longitude.longitude, name: location.city })
     setCitySearch('')
     setSearchResults([])
 
@@ -58,6 +68,40 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     // Show updating state for 1 second
     await new Promise(resolve => setTimeout(resolve, 1000))
     setUpdatingLocation(false)
+  }
+
+  // Save OpenWeatherMap API key
+  function saveApiKey() {
+    if (apiKey.trim()) {
+      const success = setOpenWeatherApiKey(apiKey.trim())
+      if (success) {
+        setApiKeyStatus('success')
+        // Reinitialize adapters with new API key
+        weatherService.initializeAdapters()
+        // Clear cache to force refetch with new adapter
+        clearAllCache()
+        // Trigger refresh
+        if (onLocationChange) {
+          onLocationChange()
+        }
+        setTimeout(() => setApiKeyStatus('saved'), 2000)
+      } else {
+        setApiKeyStatus('error')
+      }
+    }
+  }
+
+  // Remove API key
+  function removeApiKey() {
+    setOpenWeatherApiKey(null)
+    setApiKey('')
+    setApiKeyStatus('')
+    // Switch back to weather.gov
+    weatherService.switchAdapter('weathergov')
+    clearAllCache()
+    if (onLocationChange) {
+      onLocationChange()
+    }
   }
 
   return (
@@ -162,6 +206,69 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             </div>
           </section>
 
+          {/* Weather API */}
+          <section>
+            <h3 className="text-lg font-semibold mb-4">Weather API</h3>
+            <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-3">
+              <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                <p className="mb-2">
+                  Add an OpenWeatherMap API key to enable historical hourly data (24-hour graphs with past hours).
+                </p>
+                <p className="mb-2">
+                  Get a free API key at <a href="https://openweathermap.org/api" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">openweathermap.org/api</a>
+                </p>
+                <p className="text-xs">
+                  Without an API key, the app uses Weather.gov (current hour + future only).
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value)
+                    setApiKeyStatus('')
+                  }}
+                  placeholder="Enter your OpenWeatherMap API key"
+                  className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
+                />
+                <button
+                  onClick={saveApiKey}
+                  disabled={!apiKey.trim()}
+                  className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  Save
+                </button>
+              </div>
+
+              {apiKeyStatus === 'success' && (
+                <div className="text-sm text-green-600 dark:text-green-400">
+                  ✓ API key saved! Weather data will now include historical hours.
+                </div>
+              )}
+              {apiKeyStatus === 'saved' && (
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  API key configured
+                </div>
+              )}
+              {apiKeyStatus === 'error' && (
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  Failed to save API key
+                </div>
+              )}
+
+              {apiKey && (
+                <button
+                  onClick={removeApiKey}
+                  className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                >
+                  Remove API key
+                </button>
+              )}
+            </div>
+          </section>
+
           {/* Units */}
           <section>
             <h3 className="text-lg font-semibold mb-4">Units</h3>
@@ -240,7 +347,9 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
               <div className="text-sm space-y-1">
                 <div><span className="font-medium">Version:</span> 0.1.0 (MVP)</div>
-                <div><span className="font-medium">Weather API:</span> Weather.gov</div>
+                <div>
+                  <span className="font-medium">Weather API:</span> {apiKey ? 'OpenWeatherMap (with Weather.gov fallback)' : 'Weather.gov'}
+                </div>
                 <div className="pt-2 text-macos-text-secondary-light dark:text-macos-text-secondary">
                   Weather & Sky App for Raspberry Pi
                 </div>

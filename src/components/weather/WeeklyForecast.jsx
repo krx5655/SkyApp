@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { format, addDays } from 'date-fns'
 import weatherService from '../../services/weather/weatherService'
 
-function WeeklyForecast({ onDaySelect, refreshTrigger }) {
+function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
   const [forecast, setForecast] = useState([])
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -20,6 +20,11 @@ function WeeklyForecast({ onDaySelect, refreshTrigger }) {
         ])
         setForecast(forecastData)
         setCurrentWeather(current)
+
+        // Notify parent component of forecast data
+        if (onForecastLoaded) {
+          onForecastLoaded(forecastData)
+        }
       } catch (err) {
         console.error('Failed to fetch forecast:', err)
         setError(err.message)
@@ -30,7 +35,7 @@ function WeeklyForecast({ onDaySelect, refreshTrigger }) {
     }
 
     fetchForecast()
-  }, [refreshTrigger])
+  }, [refreshTrigger]) // onForecastLoaded intentionally omitted to prevent infinite loop
 
   function getWeatherIcon(condition) {
     switch (condition) {

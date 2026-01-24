@@ -1,15 +1,16 @@
 import WeatherGovAdapter from './adapters/weatherGovAdapter.js'
+import OpenWeatherAdapter from './adapters/openWeatherAdapter.js'
 import { getCache, setCache } from './cache.js'
+import { weatherConfig, getOpenWeatherApiKey, hasOpenWeatherApiKey } from './config.js'
 
 /**
  * Main Weather Service
- * Provides a unified interface to weather data with caching
- * To switch API providers, simply change the adapter
+ * Provides a unified interface to weather data with caching and fallback support
+ * Supports multiple API providers with automatic fallback
  */
 class WeatherService {
   constructor() {
-    // Change this line to switch API providers
-    this.adapter = new WeatherGovAdapter()
+    this.initializeAdapters()
 
     // Default location (can be overridden)
     this.defaultLocation = {
@@ -18,7 +19,74 @@ class WeatherService {
     }
 
     // Cache TTL (15 minutes)
-    this.cacheTTL = 15 * 60 * 1000
+    this.cacheTTL = weatherConfig.cacheTTL
+  }
+
+  /**
+   * Initialize adapters based on configuration and API key availability
+   */
+  initializeAdapters() {
+    // Always initialize weather.gov adapter (no API key required)
+    this.weatherGovAdapter = new WeatherGovAdapter()
+
+    // Initialize OpenWeather adapter if API key is available
+    const apiKey = getOpenWeatherApiKey()
+    this.openWeatherAdapter = apiKey ? new OpenWeatherAdapter(apiKey) : null
+
+    // Set primary adapter based on config and availability
+    if (weatherConfig.primaryAdapter === 'openweather' && this.openWeatherAdapter) {
+      this.adapter = this.openWeatherAdapter
+      this.fallbackAdapter = weatherConfig.enableFallback ? this.weatherGovAdapter : null
+      console.log('[WeatherService] Using OpenWeatherMap as primary adapter')
+    } else {
+      this.adapter = this.weatherGovAdapter
+      this.fallbackAdapter = weatherConfig.enableFallback && this.openWeatherAdapter ? this.openWeatherAdapter : null
+      console.log('[WeatherService] Using Weather.gov as primary adapter')
+    }
+  }
+
+  /**
+   * Switch to a different adapter
+   * @param {string} adapterName - 'openweather' or 'weathergov'
+   */
+  switchAdapter(adapterName) {
+    if (adapterName === 'openweather' && hasOpenWeatherApiKey()) {
+      weatherConfig.primaryAdapter = 'openweather'
+      this.initializeAdapters()
+      console.log('[WeatherService] Switched to OpenWeatherMap adapter')
+    } else if (adapterName === 'weathergov') {
+      weatherConfig.primaryAdapter = 'weathergov'
+      this.initializeAdapters()
+      console.log('[WeatherService] Switched to Weather.gov adapter')
+    } else {
+      console.warn('[WeatherService] Cannot switch to', adapterName, '- API key may be missing')
+    }
+  }
+
+  /**
+   * Execute adapter method with fallback support
+   * @param {string} methodName - Name of the adapter method to call
+   * @param {Array} args - Arguments to pass to the method
+   * @returns {Promise} Result from adapter
+   */
+  async executeWithFallback(methodName, ...args) {
+    try {
+      return await this.adapter[methodName](...args)
+    } catch (error) {
+      console.warn(`[WeatherService] Primary adapter (${this.adapter.constructor.name}) failed:`, error.message)
+
+      if (this.fallbackAdapter) {
+        console.log(`[WeatherService] Trying fallback adapter (${this.fallbackAdapter.constructor.name})`)
+        try {
+          return await this.fallbackAdapter[methodName](...args)
+        } catch (fallbackError) {
+          console.error('[WeatherService] Fallback adapter also failed:', fallbackError.message)
+          throw new Error(`Both adapters failed. Primary: ${error.message}, Fallback: ${fallbackError.message}`)
+        }
+      } else {
+        throw error
+      }
+    }
   }
 
   /**
@@ -64,9 +132,10 @@ class WeatherService {
       return cached
     }
 
-    // Fetch from API
+    // Fetch from API with fallback
     console.log('Fetching weekly forecast from API')
-    const data = await this.adapter.getWeeklyForecast(
+    const data = await this.executeWithFallback(
+      'getWeeklyForecast',
       location.latitude,
       location.longitude
     )
@@ -95,9 +164,10 @@ class WeatherService {
       return cached
     }
 
-    // Fetch from API
+    // Fetch from API with fallback
     console.log('Fetching hourly forecast from API')
-    const data = await this.adapter.getHourlyForecast(
+    const data = await this.executeWithFallback(
+      'getHourlyForecast',
       location.latitude,
       location.longitude,
       date
@@ -125,8 +195,9 @@ class WeatherService {
       return cached
     }
 
-    // Fetch from API
-    const data = await this.adapter.getCurrentWeather(
+    // Fetch from API with fallback
+    const data = await this.executeWithFallback(
+      'getCurrentWeather',
       location.latitude,
       location.longitude
     )
@@ -154,8 +225,9 @@ class WeatherService {
       return cached
     }
 
-    // Fetch from API
-    const data = await this.adapter.getWeatherDetails(
+    // Fetch from API with fallback
+    const data = await this.executeWithFallback(
+      'getWeatherDetails',
       location.latitude,
       location.longitude,
       date
