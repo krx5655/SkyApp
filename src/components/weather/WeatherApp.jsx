@@ -7,7 +7,7 @@ import DailyForecast from './DailyForecast'
 import RadarView from './RadarView'
 import SpaceWeatherView from './SpaceWeatherView'
 
-function WeatherApp({ onNavigateHome, onOpenSettings }) {
+function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
   const [currentScreen, setCurrentScreen] = useState('forecast') // 'forecast', 'radar', 'space'
   const [forecastView, setForecastView] = useState('weekly') // 'weekly', 'daily'
   const [selectedDay, setSelectedDay] = useState(null)
@@ -60,7 +60,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings }) {
         {currentScreen === 'forecast' && (
           <>
             {forecastView === 'weekly' && (
-              <WeeklyForecast onDaySelect={handleDaySelect} />
+              <WeeklyForecast onDaySelect={handleDaySelect} refreshTrigger={refreshTrigger} />
             )}
             {forecastView === 'daily' && (
               <DailyForecast selectedDay={selectedDay} />

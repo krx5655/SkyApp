@@ -2,52 +2,35 @@ import { useState, useEffect } from 'react'
 import { format, addDays } from 'date-fns'
 import weatherService from '../../services/weather/weatherService'
 
-function WeeklyForecast({ onDaySelect }) {
+function WeeklyForecast({ onDaySelect, refreshTrigger }) {
   const [forecast, setForecast] = useState([])
+  const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Fetch weather data on mount
+  // Fetch weather data on mount and when location changes
   useEffect(() => {
     async function fetchForecast() {
       try {
         setLoading(true)
         setError(null)
-        const data = await weatherService.getWeeklyForecast()
-        setForecast(data)
+        const [forecastData, current] = await Promise.all([
+          weatherService.getWeeklyForecast(),
+          weatherService.getCurrentWeather().catch(() => null), // Don't fail if current weather fails
+        ])
+        setForecast(forecastData)
+        setCurrentWeather(current)
       } catch (err) {
         console.error('Failed to fetch forecast:', err)
         setError(err.message)
-        // Fallback to mock data
-        setForecast(getMockForecast())
+        // Don't set forecast - leave it empty to show error state
       } finally {
         setLoading(false)
       }
     }
 
     fetchForecast()
-  }, [])
-
-  // Mock data fallback
-  function getMockForecast() {
-    const conditions = ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Stormy']
-
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = addDays(new Date(), i)
-      const condition = conditions[Math.floor(Math.random() * conditions.length)]
-
-      return {
-        id: i.toString(),
-        date,
-        dayName: i === 0 ? 'Today' : format(date, 'EEEE'),
-        shortDate: format(date, 'MMM d'),
-        high: Math.floor(Math.random() * 20) + 65,
-        low: Math.floor(Math.random() * 20) + 45,
-        condition,
-        icon: getWeatherIcon(condition),
-      }
-    })
-  }
+  }, [refreshTrigger])
 
   function getWeatherIcon(condition) {
     switch (condition) {
@@ -91,7 +74,18 @@ function WeeklyForecast({ onDaySelect }) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="text-center">
+      <div className="relative text-center">
+        {/* Current Weather in upper left */}
+        {currentWeather && (
+          <div className="absolute left-0 top-0 text-left">
+            <div className="text-5xl font-bold">{currentWeather.temp}°</div>
+            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+              {currentWeather.condition}
+            </div>
+          </div>
+        )}
+
+        {/* Centered Header */}
         <h2 className="text-3xl font-bold mb-2">7-Day Forecast</h2>
         <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
           San Francisco, CA
@@ -104,16 +98,20 @@ function WeeklyForecast({ onDaySelect }) {
             Loading forecast...
           </div>
         </div>
-      ) : error ? (
+      ) : error && forecast.length === 0 ? (
         <div className="flex justify-center items-center py-12">
-          <div className="text-red-500">
-            Failed to load forecast. Showing cached data.
+          <div className="text-center">
+            <div className="text-red-500 mb-2">Failed to load forecast</div>
+            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+              {error}
+            </div>
           </div>
         </div>
       ) : null}
 
-      <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
-        {forecast.map((day) => (
+      {forecast.length > 0 && (
+        <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
+          {forecast.map((day) => (
           <button
             key={day.id}
             onClick={() => onDaySelect(day)}
@@ -141,8 +139,9 @@ function WeeklyForecast({ onDaySelect }) {
               </div>
             </div>
           </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,65 @@
-function SettingsModal({ onClose, theme, onToggleTheme }) {
+import { useState, useEffect } from 'react'
+import { searchCities } from '../../services/geocoding/geocodingService'
+import weatherService from '../../services/weather/weatherService'
+import { clearAllCache } from '../../services/weather/cache'
+
+function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
+  const [citySearch, setCitySearch] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [currentLocation, setCurrentLocation] = useState(null)
+  const [updatingLocation, setUpdatingLocation] = useState(false)
+
+  // Load current location
+  useEffect(() => {
+    const location = weatherService.getLocation()
+    setCurrentLocation(location)
+  }, [])
+
+  // Search cities
+  useEffect(() => {
+    if (citySearch.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setSearching(true)
+        const results = await searchCities(citySearch)
+        setSearchResults(results)
+      } catch (error) {
+        console.error('City search error:', error)
+        setSearchResults([])
+      } finally {
+        setSearching(false)
+      }
+    }, 500) // Debounce
+
+    return () => clearTimeout(timer)
+  }, [citySearch])
+
+  // Select location
+  async function selectLocation(location) {
+    setUpdatingLocation(true)
+    weatherService.setLocation(location.latitude, location.longitude)
+    setCurrentLocation({ latitude: location.latitude, longitude: location.longitude, name: location.city })
+    setCitySearch('')
+    setSearchResults([])
+
+    // Clear cache to force refetch with new location
+    clearAllCache()
+
+    // Trigger refresh in parent components
+    if (onLocationChange) {
+      onLocationChange()
+    }
+
+    // Show updating state for 1 second
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    setUpdatingLocation(false)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-auto bg-macos-card-light dark:bg-macos-card rounded-3xl shadow-2xl border border-macos-border-light dark:border-macos-border">
@@ -18,6 +79,15 @@ function SettingsModal({ onClose, theme, onToggleTheme }) {
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Updating Location Indicator */}
+          {updatingLocation && (
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-center">
+              <div className="text-blue-600 dark:text-blue-400 font-medium">
+                Updating weather...
+              </div>
+            </div>
+          )}
+
           {/* Theme */}
           <section>
             <h3 className="text-lg font-semibold mb-4">Appearance</h3>
@@ -43,18 +113,52 @@ function SettingsModal({ onClose, theme, onToggleTheme }) {
           <section>
             <h3 className="text-lg font-semibold mb-4">Location</h3>
             <div className="space-y-3">
-              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
-                <div className="font-medium mb-2">Current Location</div>
-                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                  San Francisco, CA
+              {currentLocation && (
+                <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
+                  <div className="font-medium mb-2">Current Location</div>
+                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                    {currentLocation.name || 'Custom Location'}
+                  </div>
+                  <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary mt-1">
+                    {currentLocation.latitude.toFixed(4)}° N, {Math.abs(currentLocation.longitude).toFixed(4)}° {currentLocation.longitude < 0 ? 'W' : 'E'}
+                  </div>
                 </div>
-                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary mt-1">
-                  37.7749° N, 122.4194° W
-                </div>
+              )}
+
+              {/* City Search */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={citySearch}
+                  onChange={(e) => setCitySearch(e.target.value)}
+                  placeholder="Search for a city..."
+                  className="w-full px-4 py-3 rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                />
+
+                {/* Search Results */}
+                {(searching || searchResults.length > 0) && (
+                  <div className="absolute top-full left-0 right-0 mt-2 max-h-64 overflow-y-auto rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border shadow-xl z-10">
+                    {searching ? (
+                      <div className="p-4 text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
+                        Searching...
+                      </div>
+                    ) : (
+                      searchResults.map((result) => (
+                        <button
+                          key={result.id}
+                          onClick={() => selectLocation(result)}
+                          className="w-full p-4 text-left hover:bg-macos-bg-light dark:hover:bg-macos-bg transition-colors border-b border-macos-border-light dark:border-macos-border last:border-b-0"
+                        >
+                          <div className="font-medium">{result.city}</div>
+                          <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                            {result.state && `${result.state}, `}{result.country}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
-              <button className="w-full touch-target px-4 py-3 rounded-xl bg-macos-border-light dark:bg-macos-border hover:bg-macos-blue-light/10 dark:hover:bg-macos-blue/10 transition-colors text-center font-medium">
-                Add Location
-              </button>
             </div>
           </section>
 
@@ -115,9 +219,15 @@ function SettingsModal({ onClose, theme, onToggleTheme }) {
             <div className="space-y-3">
               <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
                 <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mb-2">
-                  Cached weather data: 2.4 MB
+                  Clear cached weather data to force refresh
                 </div>
-                <button className="px-4 py-2 rounded-lg bg-macos-border-light dark:bg-macos-border hover:bg-red-500/20 transition-colors text-sm font-medium">
+                <button
+                  onClick={() => {
+                    clearAllCache()
+                    alert('Cache cleared successfully')
+                  }}
+                  className="px-4 py-2 rounded-lg bg-macos-border-light dark:bg-macos-border hover:bg-red-500/20 transition-colors text-sm font-medium"
+                >
                   Clear Cache
                 </button>
               </div>

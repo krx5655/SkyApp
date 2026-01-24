@@ -1,6 +1,28 @@
+import { useState, useEffect } from 'react'
 import Header from '../common/Header'
+import weatherService from '../../services/weather/weatherService'
 
-function MainScreen({ onNavigate, onOpenSettings }) {
+function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
+  const [currentWeather, setCurrentWeather] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch current weather on mount and when location changes
+  useEffect(() => {
+    async function fetchCurrentWeather() {
+      try {
+        setLoading(true)
+        const weather = await weatherService.getCurrentWeather()
+        setCurrentWeather(weather)
+      } catch (error) {
+        console.error('Failed to fetch current weather:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCurrentWeather()
+  }, [refreshTrigger])
+
   const apps = [
     {
       id: 'weather',
@@ -73,25 +95,28 @@ function MainScreen({ onNavigate, onOpenSettings }) {
           ))}
         </div>
 
-        {/* Quick Weather Summary Widget (Placeholder) */}
+        {/* Quick Weather Summary Widget */}
         <div className="mt-12 p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-md w-full">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">Current Weather</p>
-              <p className="text-3xl font-bold">72°F</p>
-              <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">Partly Cloudy</p>
+          {loading ? (
+            <div className="text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
+              Loading weather...
             </div>
-            <div className="text-blue-500">
-              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
-                />
-              </svg>
+          ) : currentWeather ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">Current Weather</p>
+                <p className="text-3xl font-bold">{currentWeather.temp}°F</p>
+                <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">{currentWeather.condition}</p>
+              </div>
+              <div className="text-5xl">
+                {currentWeather.icon}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center text-red-500 text-sm">
+              Unable to load current weather
+            </div>
+          )}
         </div>
       </main>
     </div>

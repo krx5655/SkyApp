@@ -5,28 +5,45 @@ import weatherService from '../../services/weather/weatherService'
 function DailyForecast({ selectedDay }) {
   const [hourlyData, setHourlyData] = useState([])
   const [weatherDetails, setWeatherDetails] = useState(null)
+  const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Fetch hourly data and weather details when selectedDay changes
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
+        setError(null)
         const date = selectedDay?.date || new Date()
 
-        // Fetch hourly forecast and weather details in parallel
-        const [hourly, details] = await Promise.all([
+        // Check if this is today
+        const now = new Date()
+        const isToday = date.toDateString() === now.toDateString()
+
+        // Fetch hourly forecast, weather details, and current weather (if today) in parallel
+        const promises = [
           weatherService.getHourlyForecast(null, null, date),
           weatherService.getWeatherDetails(null, null, date),
-        ])
+        ]
 
-        setHourlyData(hourly)
-        setWeatherDetails(details)
+        if (isToday) {
+          promises.push(weatherService.getCurrentWeather().catch(() => null))
+        }
+
+        const results = await Promise.all(promises)
+
+        setHourlyData(results[0])
+        setWeatherDetails(results[1])
+        if (isToday && results[2]) {
+          setCurrentWeather(results[2])
+        } else {
+          setCurrentWeather(null)
+        }
       } catch (error) {
         console.error('Failed to fetch daily forecast:', error)
-        // Fallback to mock data
-        setHourlyData(getMockHourlyData())
-        setWeatherDetails(getMockDetails())
+        setError(error.message)
+        // Don't set data - leave empty to show error state
       } finally {
         setLoading(false)
       }
@@ -35,52 +52,60 @@ function DailyForecast({ selectedDay }) {
     fetchData()
   }, [selectedDay])
 
-  // Mock data fallbacks
-  function getMockHourlyData() {
-    const conditions = ['☀️', '⛅', '☁️', '🌧️']
-    return Array.from({ length: 24 }, (_, i) => ({
-      hour: i,
-      temp: Math.floor(Math.random() * 15) + 55,
-      precipitation: Math.floor(Math.random() * 60),
-      condition: conditions[Math.floor(Math.random() * conditions.length)],
-    }))
-  }
-
-  function getMockDetails() {
-    return {
-      sunrise: '6:42 AM',
-      sunset: '7:18 PM',
-      wind: '12 mph NW',
-      humidity: '65%',
-      uvIndex: 6,
-      visibility: '10 mi',
-    }
-  }
-
-  // Use fetched data or fallback
-  const mockHourlyData = hourlyData.length > 0 ? hourlyData : getMockHourlyData()
-  const mockDetails = weatherDetails || getMockDetails()
-
   const displayDate = selectedDay?.date || new Date()
-  const displayCondition = selectedDay?.condition || 'Partly Cloudy'
-  const displayHigh = selectedDay?.high || 72
-  const displayLow = selectedDay?.low || 58
-  const currentTemp = Math.floor((displayHigh + displayLow) / 2)
+  const displayCondition = selectedDay?.condition || ''
+  const displayHigh = selectedDay?.high || null
+  const displayLow = selectedDay?.low || null
   const currentHour = new Date().getHours()
 
-  // Calculate temperature range for Y-axis
-  const allTemps = mockHourlyData.map(d => d.temp)
-  const minTemp = Math.min(...allTemps)
-  const maxTemp = Math.max(...allTemps)
-  const tempRange = maxTemp - minTemp
-  const yAxisMin = Math.floor(minTemp / 10) * 10
-  const yAxisMax = Math.ceil(maxTemp / 10) * 10
+  // Check if selected day is today
+  const now = new Date()
+  const isToday = displayDate.toDateString() === now.toDateString()
+
+  // Calculate temperature range for Y-axis with ±10° padding
+  const allTemps = hourlyData.length > 0 ? hourlyData.map(d => d.temp) : []
+  const minTemp = allTemps.length > 0 ? Math.min(...allTemps) : 0
+  const maxTemp = allTemps.length > 0 ? Math.max(...allTemps) : 100
+  const yAxisMin = minTemp - 10
+  const yAxisMax = maxTemp + 10
   const yAxisRange = yAxisMax - yAxisMin
 
+  // For graphing, we need to know the hour range
+  const minHour = hourlyData.length > 0 ? hourlyData[0].hour : 0
+  const maxHour = hourlyData.length > 0 ? hourlyData[hourlyData.length - 1].hour : 23
+  const hourRange = maxHour - minHour
+
+  console.log(`[DailyForecast] Hourly data points:`, hourlyData.length)
+  console.log(`[DailyForecast] Hour range: ${minHour} to ${maxHour}`)
+  console.log(`[DailyForecast] Temp range: ${minTemp}° to ${maxTemp}°`)
+  console.log(`[DailyForecast] Y-axis range: ${yAxisMin}° to ${yAxisMax}°`)
+
   // Calculate precipitation range for Y-axis
-  const allPrecip = mockHourlyData.map(d => d.precipitation)
-  const maxPrecip = Math.max(...allPrecip)
+  const allPrecip = hourlyData.length > 0 ? hourlyData.map(d => d.precipitation) : []
+  const maxPrecip = allPrecip.length > 0 ? Math.max(...allPrecip) : 100
   const precipYMax = Math.ceil(maxPrecip / 20) * 20
+
+  // Calculate which hours to display on X-axis (roughly every 6 hours or evenly spaced)
+  const getDisplayHours = () => {
+    if (hourlyData.length === 0) return []
+
+    // For full day (24 hours), show: 0, 6, 12, 18
+    if (hourlyData.length >= 20) {
+      return [0, 6, 12, 18].filter(h => hourlyData.some(d => d.hour === h))
+    }
+
+    // For partial day, show first, middle, and last hours
+    const step = Math.max(1, Math.floor(hourlyData.length / 4))
+    return [
+      0,
+      step,
+      step * 2,
+      step * 3,
+      hourlyData.length - 1
+    ].map(i => hourlyData[i]?.hour).filter(h => h !== undefined)
+  }
+
+  const displayHours = getDisplayHours()
 
   return (
     <div className="p-6 space-y-6">
@@ -90,33 +115,63 @@ function DailyForecast({ selectedDay }) {
           {format(displayDate, 'EEEE, MMMM d')}
         </h2>
         <p className="text-lg text-macos-text-secondary-light dark:text-macos-text-secondary">
-          {displayCondition}
+          {displayCondition || 'Loading...'}
         </p>
       </div>
 
+      {/* Loading/Error States */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-macos-text-secondary-light dark:text-macos-text-secondary">
+            Loading hourly forecast...
+          </div>
+        </div>
+      )}
+
+      {error && hourlyData.length === 0 && (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-center">
+            <div className="text-red-500 mb-2">Failed to load hourly forecast</div>
+            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+              {error}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Grid Container - 12 columns */}
+      {hourlyData.length > 0 && (
       <div className="grid grid-cols-12 gap-4">
         {/* Temperature Graph - 6/12 columns (50%) */}
         <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
           {/* Temperature overlay in top-left */}
           <div className="absolute top-6 left-6 z-10">
-            <div className="text-4xl font-bold">{currentTemp}°</div>
-            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-              H: {displayHigh}° L: {displayLow}°
-            </div>
+            {isToday && currentWeather ? (
+              <>
+                <div className="text-4xl font-bold">{currentWeather.temp}°</div>
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  H: {displayHigh}° L: {displayLow}°
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-4xl font-bold">H: {displayHigh}°</div>
+                <div className="text-4xl font-bold">L: {displayLow}°</div>
+              </>
+            )}
           </div>
 
           {/* Graph container */}
           <div className="relative flex mt-16">
             {/* Main graph area */}
             <div className="flex-1 relative" style={{ height: '240px' }}>
-              {/* Weather icons row - show every 6 hours */}
+              {/* Weather icons row - show at display hours */}
               <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
-                {[0, 6, 12, 18].map((hour) => {
-                  const data = mockHourlyData[hour]
+                {displayHours.slice(0, 4).map((hour) => {
+                  const data = hourlyData.find(d => d.hour === hour)
                   return (
                     <div key={hour} className="text-lg flex-1 text-center">
-                      {data.condition}
+                      {data?.condition || ''}
                     </div>
                   )
                 })}
@@ -134,9 +189,9 @@ function DailyForecast({ selectedDay }) {
                 {/* Create path for gradient fill */}
                 <path
                   d={`
-                    M 0,${200 - ((mockHourlyData[0].temp - yAxisMin) / yAxisRange * 200)}
-                    ${mockHourlyData.map((data, i) => {
-                      const x = (i / 23) * 100
+                    M 0,${200 - ((hourlyData[0].temp - yAxisMin) / yAxisRange * 200)}
+                    ${hourlyData.map((data, i) => {
+                      const x = ((data.hour - minHour) / hourRange) * 100
                       const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
                       return `L ${x},${y}`
                     }).join(' ')}
@@ -148,8 +203,8 @@ function DailyForecast({ selectedDay }) {
 
                 {/* Line connecting points */}
                 <polyline
-                  points={mockHourlyData.map((data, i) => {
-                    const x = (i / 23) * 100
+                  points={hourlyData.map((data, i) => {
+                    const x = ((data.hour - minHour) / hourRange) * 100
                     const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
                     return `${x},${y}`
                   }).join(' ')}
@@ -159,14 +214,15 @@ function DailyForecast({ selectedDay }) {
                   vectorEffect="non-scaling-stroke"
                 />
 
-                {/* Dots at key points (every 6 hours) */}
-                {[0, 6, 12, 18, 23].map((i) => {
-                  const data = mockHourlyData[i]
-                  const x = (i / 23) * 100
+                {/* Dots at display hours */}
+                {displayHours.map((hour) => {
+                  const data = hourlyData.find(d => d.hour === hour)
+                  if (!data) return null
+                  const x = ((data.hour - minHour) / hourRange) * 100
                   const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
                   return (
                     <circle
-                      key={i}
+                      key={hour}
                       cx={`${x}%`}
                       cy={`${y}%`}
                       r="3"
@@ -177,12 +233,12 @@ function DailyForecast({ selectedDay }) {
                   )
                 })}
 
-                {/* Current time indicator */}
-                {currentHour >= 0 && currentHour < 24 && (
+                {/* Current time indicator - only if current hour is in range */}
+                {isToday && currentHour >= minHour && currentHour <= maxHour && (
                   <line
-                    x1={`${(currentHour / 23) * 100}%`}
+                    x1={`${((currentHour - minHour) / hourRange) * 100}%`}
                     y1="0"
-                    x2={`${(currentHour / 23) * 100}%`}
+                    x2={`${((currentHour - minHour) / hourRange) * 100}%`}
                     y2="100%"
                     stroke="white"
                     strokeWidth="1"
@@ -191,17 +247,19 @@ function DailyForecast({ selectedDay }) {
                 )}
               </svg>
 
-              {/* Temperature labels - show every 6 hours */}
+              {/* Temperature labels - show at display hours */}
               <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
-                {[0, 6, 12, 18, 23].map((i) => {
-                  const data = mockHourlyData[i]
+                {displayHours.map((hour) => {
+                  const data = hourlyData.find(d => d.hour === hour)
+                  if (!data) return null
+                  const x = ((data.hour - minHour) / hourRange) * 100
                   const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
                   return (
                     <div
-                      key={i}
+                      key={hour}
                       className="absolute text-xs font-semibold"
                       style={{
-                        left: `${(i / 23) * 100}%`,
+                        left: `${x}%`,
                         top: `${(y / 200) * 100}%`,
                         transform: 'translate(-50%, -20px)',
                       }}
@@ -212,9 +270,9 @@ function DailyForecast({ selectedDay }) {
                 })}
               </div>
 
-              {/* Hour labels at bottom - every 6 hours */}
+              {/* Hour labels at bottom - show at display hours */}
               <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
-                {[0, 6, 12, 18].map((hour) => {
+                {displayHours.slice(0, 4).map((hour) => {
                   const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
                   return (
                     <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
@@ -240,7 +298,7 @@ function DailyForecast({ selectedDay }) {
           <div className="absolute top-6 left-6 z-10">
             <div className="text-2xl font-bold">Precipitation</div>
             <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-              24-hour forecast
+              {isToday ? `${hourlyData.length}-hour forecast` : '24-hour forecast'}
             </div>
           </div>
 
@@ -248,13 +306,13 @@ function DailyForecast({ selectedDay }) {
           <div className="relative flex mt-16">
             {/* Main graph area */}
             <div className="flex-1 relative" style={{ height: '240px' }}>
-              {/* Weather icons row - show every 6 hours */}
+              {/* Weather icons row - show at display hours */}
               <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
-                {[0, 6, 12, 18].map((hour) => {
-                  const data = mockHourlyData[hour]
+                {displayHours.slice(0, 4).map((hour) => {
+                  const data = hourlyData.find(d => d.hour === hour)
                   return (
                     <div key={hour} className="text-lg flex-1 text-center">
-                      {data.condition}
+                      {data?.condition || ''}
                     </div>
                   )
                 })}
@@ -272,9 +330,9 @@ function DailyForecast({ selectedDay }) {
                 {/* Create path for gradient fill */}
                 <path
                   d={`
-                    M 0,${200 - ((mockHourlyData[0].precipitation / 100) * 200)}
-                    ${mockHourlyData.map((data, i) => {
-                      const x = (i / 23) * 100
+                    M 0,${200 - ((hourlyData[0].precipitation / 100) * 200)}
+                    ${hourlyData.map((data, i) => {
+                      const x = ((data.hour - minHour) / hourRange) * 100
                       const y = 200 - ((data.precipitation / 100) * 200)
                       return `L ${x},${y}`
                     }).join(' ')}
@@ -286,8 +344,8 @@ function DailyForecast({ selectedDay }) {
 
                 {/* Line connecting points */}
                 <polyline
-                  points={mockHourlyData.map((data, i) => {
-                    const x = (i / 23) * 100
+                  points={hourlyData.map((data, i) => {
+                    const x = ((data.hour - minHour) / hourRange) * 100
                     const y = 200 - ((data.precipitation / 100) * 200)
                     return `${x},${y}`
                   }).join(' ')}
@@ -297,14 +355,15 @@ function DailyForecast({ selectedDay }) {
                   vectorEffect="non-scaling-stroke"
                 />
 
-                {/* Dots at key points (every 6 hours) */}
-                {[0, 6, 12, 18, 23].map((i) => {
-                  const data = mockHourlyData[i]
-                  const x = (i / 23) * 100
+                {/* Dots at display hours */}
+                {displayHours.map((hour) => {
+                  const data = hourlyData.find(d => d.hour === hour)
+                  if (!data) return null
+                  const x = ((data.hour - minHour) / hourRange) * 100
                   const y = 200 - ((data.precipitation / 100) * 200)
                   return (
                     <circle
-                      key={i}
+                      key={hour}
                       cx={`${x}%`}
                       cy={`${y}%`}
                       r="3"
@@ -315,12 +374,12 @@ function DailyForecast({ selectedDay }) {
                   )
                 })}
 
-                {/* Current time indicator */}
-                {currentHour >= 0 && currentHour < 24 && (
+                {/* Current time indicator - only if current hour is in range */}
+                {isToday && currentHour >= minHour && currentHour <= maxHour && (
                   <line
-                    x1={`${(currentHour / 23) * 100}%`}
+                    x1={`${((currentHour - minHour) / hourRange) * 100}%`}
                     y1="0"
-                    x2={`${(currentHour / 23) * 100}%`}
+                    x2={`${((currentHour - minHour) / hourRange) * 100}%`}
                     y2="100%"
                     stroke="white"
                     strokeWidth="1"
@@ -329,17 +388,19 @@ function DailyForecast({ selectedDay }) {
                 )}
               </svg>
 
-              {/* Precipitation labels - show every 6 hours */}
+              {/* Precipitation labels - show at display hours */}
               <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
-                {[0, 6, 12, 18, 23].map((i) => {
-                  const data = mockHourlyData[i]
+                {displayHours.map((hour) => {
+                  const data = hourlyData.find(d => d.hour === hour)
+                  if (!data) return null
+                  const x = ((data.hour - minHour) / hourRange) * 100
                   const y = 200 - ((data.precipitation / 100) * 200)
                   return (
                     <div
-                      key={i}
+                      key={hour}
                       className="absolute text-xs font-semibold"
                       style={{
-                        left: `${(i / 23) * 100}%`,
+                        left: `${x}%`,
                         top: `${(y / 200) * 100}%`,
                         transform: 'translate(-50%, -20px)',
                       }}
@@ -350,9 +411,9 @@ function DailyForecast({ selectedDay }) {
                 })}
               </div>
 
-              {/* Hour labels at bottom - every 6 hours */}
+              {/* Hour labels at bottom - show at display hours */}
               <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
-                {[0, 6, 12, 18].map((hour) => {
+                {displayHours.slice(0, 4).map((hour) => {
                   const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
                   return (
                     <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
@@ -372,34 +433,39 @@ function DailyForecast({ selectedDay }) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Grid Container for smaller cards */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Weather Details - 3/12 columns (25%) */}
-        <div className="col-span-3 p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-          <h3 className="text-lg font-semibold mb-4">Weather Details</h3>
-          <div className="space-y-4">
-            {Object.entries(mockDetails).map(([key, value]) => (
+      {weatherDetails && (
+        <div className="grid grid-cols-12 gap-4">
+          {/* Weather Details - 3/12 columns (25%) */}
+          <div className="col-span-3 p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+            <h3 className="text-lg font-semibold mb-4">Weather Details</h3>
+            <div className="space-y-4">
+              {Object.entries(weatherDetails).map(([key, value]) => (
               <div key={key} className="flex flex-col">
                 <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary capitalize mb-1">
                   {key.replace(/([A-Z])/g, ' $1').trim()}
                 </div>
                 <div className="text-lg font-semibold">{value}</div>
               </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Weather Summary */}
-      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-        <h3 className="text-lg font-semibold mb-2">Summary</h3>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary leading-relaxed">
-          Expect {displayCondition.toLowerCase()} conditions throughout the day.
-          Temperatures will range from {displayLow}°F in the morning to {displayHigh}°F
-          in the afternoon. Light winds from the northwest.
-        </p>
-      </div>
+      {displayCondition && displayHigh && displayLow && (
+        <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+          <h3 className="text-lg font-semibold mb-2">Summary</h3>
+          <p className="text-macos-text-secondary-light dark:text-macos-text-secondary leading-relaxed">
+            Expect {displayCondition.toLowerCase()} conditions throughout the day.
+            Temperatures will range from {displayLow}°F in the morning to {displayHigh}°F
+            in the afternoon. Light winds from the northwest.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

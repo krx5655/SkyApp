@@ -101,49 +101,117 @@ class WeatherGovAdapter extends BaseWeatherAdapter {
 
       const periods = hourlyData.properties.periods
       const targetDay = startOfDay(date)
+      const now = new Date()
+      const isToday = startOfDay(now).getTime() === targetDay.getTime()
 
-      // Filter to get 24 hours starting from the target day
-      const hourlyForecasts = []
+      console.log(`[weatherGovAdapter] Fetching hourly forecast for ${format(date, 'MMM d, yyyy')}`)
+      console.log(`[weatherGovAdapter] Total periods from API:`, periods.length)
 
-      for (let i = 0; i < 24; i++) {
-        const targetTime = addHours(targetDay, i)
+      // Filter periods for the target day
+      const dayPeriods = periods.filter(p => {
+        const periodTime = parseISO(p.startTime)
+        return startOfDay(periodTime).getTime() === targetDay.getTime()
+      })
 
-        // Find the closest period to this hour
-        const period = periods.find(p => {
-          const periodTime = parseISO(p.startTime)
-          return periodTime.getHours() === targetTime.getHours() &&
-                 startOfDay(periodTime).getTime() === targetDay.getTime()
-        })
+      console.log(`[weatherGovAdapter] Periods for target day:`, dayPeriods.length)
+      console.log(`[weatherGovAdapter] Hours available:`, dayPeriods.map(p => parseISO(p.startTime).getHours()))
 
-        if (period) {
-          hourlyForecasts.push({
-            hour: i,
-            time: parseISO(period.startTime),
-            temp: period.temperature,
-            precipitation: period.probabilityOfPrecipitation?.value || 0,
-            condition: period.shortForecast,
-            icon: this.mapConditionToIcon(period.shortForecast),
-            windSpeed: this.parseWindSpeed(period.windSpeed),
-            windDirection: period.windDirection,
-            humidity: period.relativeHumidity?.value || 50,
-          })
-        } else {
-          // Fallback: generate placeholder data
-          hourlyForecasts.push({
-            hour: i,
-            time: targetTime,
-            temp: 60 + Math.floor(Math.random() * 20),
-            precipitation: Math.floor(Math.random() * 30),
-            condition: '☁️',
-            icon: WeatherIcons.CLOUDY,
-            windSpeed: 10,
-            windDirection: 'N',
-            humidity: 50,
-          })
-        }
+      // If no periods found for target day, it might be too far in future
+      if (dayPeriods.length === 0) {
+        throw new Error(`No hourly forecast data available for ${format(date, 'MMM d, yyyy')}`)
       }
 
-      return hourlyForecasts
+      // For today, only return hours we have (API doesn't provide past hours)
+      // For future days, build full 24-hour array with interpolation
+      if (isToday) {
+        // Just map the periods we have without forcing 24 hours
+        const hourlyForecasts = dayPeriods.map(p => {
+          const periodTime = parseISO(p.startTime)
+          return {
+            hour: periodTime.getHours(),
+            time: periodTime,
+            temp: p.temperature,
+            precipitation: p.probabilityOfPrecipitation?.value || 0,
+            condition: p.shortForecast,
+            icon: this.mapConditionToIcon(p.shortForecast),
+            windSpeed: this.parseWindSpeed(p.windSpeed),
+            windDirection: p.windDirection,
+            humidity: p.relativeHumidity?.value || 50,
+          }
+        })
+
+        console.log(`[weatherGovAdapter] Today's forecast - returning ${hourlyForecasts.length} hours from now until midnight`)
+        console.log(`[weatherGovAdapter] Hour range: ${hourlyForecasts[0].hour} to ${hourlyForecasts[hourlyForecasts.length - 1].hour}`)
+        console.log(`[weatherGovAdapter] Sample temps:`, hourlyForecasts.map(h => h.temp))
+
+        return hourlyForecasts
+      } else {
+        // For future days, build full 24-hour array with interpolation
+        const hourlyForecasts = Array(24).fill(null)
+
+        // Fill in the hours we have data for
+        dayPeriods.forEach(p => {
+          const periodTime = parseISO(p.startTime)
+          const hour = periodTime.getHours()
+
+          hourlyForecasts[hour] = {
+            hour,
+            time: periodTime,
+            temp: p.temperature,
+            precipitation: p.probabilityOfPrecipitation?.value || 0,
+            condition: p.shortForecast,
+            icon: this.mapConditionToIcon(p.shortForecast),
+            windSpeed: this.parseWindSpeed(p.windSpeed),
+            windDirection: p.windDirection,
+            humidity: p.relativeHumidity?.value || 50,
+          }
+        })
+
+        // For hours without data, use interpolation from surrounding hours
+        for (let hour = 0; hour < 24; hour++) {
+          if (!hourlyForecasts[hour]) {
+            // Find previous and next non-null hours for interpolation
+            let prevHour = hour - 1
+            while (prevHour >= 0 && !hourlyForecasts[prevHour]) prevHour--
+
+            let nextHour = hour + 1
+            while (nextHour < 24 && !hourlyForecasts[nextHour]) nextHour++
+
+            // If we have surrounding data, interpolate
+            if (prevHour >= 0 && nextHour < 24) {
+              const prev = hourlyForecasts[prevHour]
+              const next = hourlyForecasts[nextHour]
+              const ratio = (hour - prevHour) / (nextHour - prevHour)
+
+              hourlyForecasts[hour] = {
+                hour,
+                time: addHours(targetDay, hour),
+                temp: Math.round(prev.temp + (next.temp - prev.temp) * ratio),
+                precipitation: Math.round(prev.precipitation + (next.precipitation - prev.precipitation) * ratio),
+                condition: prev.condition,
+                icon: prev.icon,
+                windSpeed: Math.round(prev.windSpeed + (next.windSpeed - prev.windSpeed) * ratio),
+                windDirection: prev.windDirection,
+                humidity: Math.round(prev.humidity + (next.humidity - prev.humidity) * ratio),
+              }
+            } else if (prevHour >= 0) {
+              // Only have previous data, use it
+              hourlyForecasts[hour] = { ...hourlyForecasts[prevHour], hour, time: addHours(targetDay, hour) }
+            } else if (nextHour < 24) {
+              // Only have next data, use it
+              hourlyForecasts[hour] = { ...hourlyForecasts[nextHour], hour, time: addHours(targetDay, hour) }
+            } else {
+              // No data at all - shouldn't happen, but fallback
+              throw new Error('Insufficient forecast data')
+            }
+          }
+        }
+
+        console.log(`[weatherGovAdapter] Future day - full 24-hour forecast array`)
+        console.log(`[weatherGovAdapter] Sample temps:`, hourlyForecasts.map(h => h.temp))
+
+        return hourlyForecasts
+      }
     } catch (error) {
       console.error('Weather.gov hourly forecast error:', error)
       throw error
