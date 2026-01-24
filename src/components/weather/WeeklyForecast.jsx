@@ -23,33 +23,33 @@ function WeeklyForecast({ onDaySelect }) {
     switch (condition) {
       case 'Sunny':
         return (
-          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="5" strokeWidth={2} />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
           </svg>
         )
       case 'Partly Cloudy':
         return (
-          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
           </svg>
         )
       case 'Cloudy':
         return (
-          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
           </svg>
         )
       case 'Rainy':
         return (
-          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 19v2m4-2v2m4-2v2" />
           </svg>
         )
       case 'Stormy':
         return (
-          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10l-3 6h4l-3 6" />
           </svg>
@@ -68,16 +68,16 @@ function WeeklyForecast({ onDaySelect }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="flex gap-3 overflow-x-auto pb-2">
         {mockForecast.map((day) => (
           <button
             key={day.id}
             onClick={() => onDaySelect(day)}
-            className="touch-target p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border hover:border-macos-blue-light dark:hover:border-macos-blue transition-all hover:shadow-lg group"
+            className="touch-target flex-shrink-0 w-32 p-4 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border hover:border-macos-blue-light dark:hover:border-macos-blue transition-all hover:shadow-lg group"
           >
-            <div className="text-center space-y-3">
-              <div className="font-semibold text-lg">{day.dayName}</div>
-              <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+            <div className="text-center space-y-2">
+              <div className="font-semibold text-sm">{day.dayName}</div>
+              <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
                 {day.shortDate}
               </div>
 
@@ -85,16 +85,14 @@ function WeeklyForecast({ onDaySelect }) {
                 {day.icon}
               </div>
 
-              <div className="text-sm font-medium">{day.condition}</div>
+              <div className="text-xs font-medium truncate">{day.condition}</div>
 
-              <div className="flex justify-center gap-4 pt-2">
+              <div className="flex flex-col gap-1 pt-1">
                 <div className="text-center">
-                  <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">High</div>
-                  <div className="text-xl font-bold">{day.high}°</div>
+                  <div className="text-lg font-bold">{day.high}°</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">Low</div>
-                  <div className="text-xl font-bold">{day.low}°</div>
+                <div className="text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  <div className="text-sm">{day.low}°</div>
                 </div>
               </div>
             </div>
