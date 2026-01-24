@@ -15,7 +15,7 @@ function DailyForecast({ selectedDay }) {
       try {
         setLoading(true)
         setError(null)
-        const date = selectedDay?.date || new Date()
+        const date = selectedDay?.date ? new Date(selectedDay.date) : new Date()
 
         // Check if this is today
         const now = new Date()
@@ -52,7 +52,7 @@ function DailyForecast({ selectedDay }) {
     fetchData()
   }, [selectedDay])
 
-  const displayDate = selectedDay?.date || new Date()
+  const displayDate = selectedDay?.date ? new Date(selectedDay.date) : new Date()
   const displayCondition = selectedDay?.condition || ''
   const displayHigh = selectedDay?.high || null
   const displayLow = selectedDay?.low || null
