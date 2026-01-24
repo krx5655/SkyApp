@@ -4,6 +4,7 @@ import weatherService from '../../services/weather/weatherService'
 
 function WeeklyForecast({ onDaySelect }) {
   const [forecast, setForecast] = useState([])
+  const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -13,8 +14,12 @@ function WeeklyForecast({ onDaySelect }) {
       try {
         setLoading(true)
         setError(null)
-        const data = await weatherService.getWeeklyForecast()
-        setForecast(data)
+        const [forecastData, current] = await Promise.all([
+          weatherService.getWeeklyForecast(),
+          weatherService.getCurrentWeather().catch(() => null), // Don't fail if current weather fails
+        ])
+        setForecast(forecastData)
+        setCurrentWeather(current)
       } catch (err) {
         console.error('Failed to fetch forecast:', err)
         setError(err.message)
@@ -69,7 +74,18 @@ function WeeklyForecast({ onDaySelect }) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="text-center">
+      <div className="relative text-center">
+        {/* Current Weather in upper left */}
+        {currentWeather && (
+          <div className="absolute left-0 top-0 text-left">
+            <div className="text-5xl font-bold">{currentWeather.temp}°</div>
+            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+              {currentWeather.condition}
+            </div>
+          </div>
+        )}
+
+        {/* Centered Header */}
         <h2 className="text-3xl font-bold mb-2">7-Day Forecast</h2>
         <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
           San Francisco, CA
