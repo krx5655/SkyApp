@@ -1,25 +1,65 @@
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import weatherService from '../../services/weather/weatherService'
 
 function DailyForecast({ selectedDay }) {
-  // Mock hourly data with weather conditions
-  const mockHourlyData = Array.from({ length: 24 }, (_, i) => {
+  const [hourlyData, setHourlyData] = useState([])
+  const [weatherDetails, setWeatherDetails] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch hourly data and weather details when selectedDay changes
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+        const date = selectedDay?.date || new Date()
+
+        // Fetch hourly forecast and weather details in parallel
+        const [hourly, details] = await Promise.all([
+          weatherService.getHourlyForecast(null, null, date),
+          weatherService.getWeatherDetails(null, null, date),
+        ])
+
+        setHourlyData(hourly)
+        setWeatherDetails(details)
+      } catch (error) {
+        console.error('Failed to fetch daily forecast:', error)
+        // Fallback to mock data
+        setHourlyData(getMockHourlyData())
+        setWeatherDetails(getMockDetails())
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [selectedDay])
+
+  // Mock data fallbacks
+  function getMockHourlyData() {
     const conditions = ['☀️', '⛅', '☁️', '🌧️']
-    return {
+    return Array.from({ length: 24 }, (_, i) => ({
       hour: i,
       temp: Math.floor(Math.random() * 15) + 55,
       precipitation: Math.floor(Math.random() * 60),
       condition: conditions[Math.floor(Math.random() * conditions.length)],
-    }
-  })
-
-  const mockDetails = {
-    sunrise: '6:42 AM',
-    sunset: '7:18 PM',
-    wind: '12 mph NW',
-    humidity: '65%',
-    uvIndex: 6,
-    visibility: '10 mi',
+    }))
   }
+
+  function getMockDetails() {
+    return {
+      sunrise: '6:42 AM',
+      sunset: '7:18 PM',
+      wind: '12 mph NW',
+      humidity: '65%',
+      uvIndex: 6,
+      visibility: '10 mi',
+    }
+  }
+
+  // Use fetched data or fallback
+  const mockHourlyData = hourlyData.length > 0 ? hourlyData : getMockHourlyData()
+  const mockDetails = weatherDetails || getMockDetails()
 
   const displayDate = selectedDay?.date || new Date()
   const displayCondition = selectedDay?.condition || 'Partly Cloudy'
