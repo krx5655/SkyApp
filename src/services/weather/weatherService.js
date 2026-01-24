@@ -1,7 +1,7 @@
 import WeatherGovAdapter from './adapters/weatherGovAdapter.js'
 import OpenWeatherAdapter from './adapters/openWeatherAdapter.js'
-import { getCache, setCache } from './cache.js'
-import { weatherConfig, getOpenWeatherApiKey, hasOpenWeatherApiKey } from './config.js'
+import { getCache, setCache, clearAllCache } from './cache.js'
+import { weatherConfig, getOpenWeatherApiKey, hasOpenWeatherApiKey, getSelectedAdapter, getCurrentAdapterName } from './config.js'
 
 /**
  * Main Weather Service
@@ -33,14 +33,18 @@ class WeatherService {
     const apiKey = getOpenWeatherApiKey()
     this.openWeatherAdapter = apiKey ? new OpenWeatherAdapter(apiKey) : null
 
-    // Set primary adapter based on config and availability
-    if (weatherConfig.primaryAdapter === 'openweather' && this.openWeatherAdapter) {
+    // Get selected adapter from localStorage (user preference)
+    const selectedAdapter = getSelectedAdapter()
+    weatherConfig.primaryAdapter = selectedAdapter
+
+    // Set primary adapter based on user selection and availability
+    if (selectedAdapter === 'openweather' && this.openWeatherAdapter) {
       this.adapter = this.openWeatherAdapter
-      this.fallbackAdapter = weatherConfig.enableFallback ? this.weatherGovAdapter : null
+      this.fallbackAdapter = null // No fallback - user explicitly chose this adapter
       console.log('[WeatherService] Using OpenWeatherMap as primary adapter')
     } else {
       this.adapter = this.weatherGovAdapter
-      this.fallbackAdapter = weatherConfig.enableFallback && this.openWeatherAdapter ? this.openWeatherAdapter : null
+      this.fallbackAdapter = null // No fallback - user explicitly chose this adapter
       console.log('[WeatherService] Using Weather.gov as primary adapter')
     }
   }
@@ -116,6 +120,13 @@ class WeatherService {
   }
 
   /**
+   * Get cache key prefix with adapter name
+   */
+  getCacheKeyPrefix() {
+    return getCurrentAdapterName()
+  }
+
+  /**
    * Get weekly forecast with caching
    */
   async getWeeklyForecast(latitude = null, longitude = null) {
@@ -123,7 +134,7 @@ class WeatherService {
       ? { latitude, longitude }
       : this.getLocation()
 
-    const cacheKey = `weekly_${location.latitude}_${location.longitude}`
+    const cacheKey = `${this.getCacheKeyPrefix()}_weekly_${location.latitude}_${location.longitude}`
 
     // Try cache first
     const cached = getCache(cacheKey)
@@ -155,7 +166,7 @@ class WeatherService {
       : this.getLocation()
 
     const dateStr = date.toISOString().split('T')[0]
-    const cacheKey = `hourly_${location.latitude}_${location.longitude}_${dateStr}`
+    const cacheKey = `${this.getCacheKeyPrefix()}_hourly_${location.latitude}_${location.longitude}_${dateStr}`
 
     // Try cache first
     const cached = getCache(cacheKey)
@@ -191,7 +202,7 @@ class WeatherService {
       ? { latitude, longitude }
       : this.getLocation()
 
-    const cacheKey = `current_${location.latitude}_${location.longitude}`
+    const cacheKey = `${this.getCacheKeyPrefix()}_current_${location.latitude}_${location.longitude}`
 
     // Try cache first (shorter TTL for current weather)
     const cached = getCache(cacheKey)
@@ -221,7 +232,7 @@ class WeatherService {
       : this.getLocation()
 
     const dateStr = date.toISOString().split('T')[0]
-    const cacheKey = `details_${location.latitude}_${location.longitude}_${dateStr}`
+    const cacheKey = `${this.getCacheKeyPrefix()}_details_${location.latitude}_${location.longitude}_${dateStr}`
 
     // Try cache first
     const cached = getCache(cacheKey)

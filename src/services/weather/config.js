@@ -8,12 +8,57 @@ export const weatherConfig = {
   primaryAdapter: 'openweather',
 
   // Fallback behavior
-  enableFallback: true,
+  enableFallback: false, // Disabled - user explicitly chooses adapter
   fallbackAdapter: 'weathergov',
 
   // Cache settings (in milliseconds)
   cacheTTL: 15 * 60 * 1000, // 15 minutes for forecasts
   historicalCacheTTL: 6 * 60 * 60 * 1000, // 6 hours for historical data
+}
+
+/**
+ * Get the selected weather API provider from localStorage
+ * @returns {string} 'openweather' or 'weathergov'
+ */
+export function getSelectedAdapter() {
+  try {
+    const stored = localStorage.getItem('weather_adapter')
+    if (stored === 'openweather' || stored === 'weathergov') {
+      return stored
+    }
+    // Default to openweather if API key exists, otherwise weathergov
+    return hasOpenWeatherApiKey() ? 'openweather' : 'weathergov'
+  } catch (error) {
+    console.warn('Failed to get selected adapter from localStorage:', error)
+    return 'openweather'
+  }
+}
+
+/**
+ * Set the selected weather API provider in localStorage
+ * @param {string} adapter - 'openweather' or 'weathergov'
+ * @returns {boolean} True if successful
+ */
+export function setSelectedAdapter(adapter) {
+  try {
+    if (adapter === 'openweather' || adapter === 'weathergov') {
+      localStorage.setItem('weather_adapter', adapter)
+      weatherConfig.primaryAdapter = adapter
+      return true
+    }
+    return false
+  } catch (error) {
+    console.warn('Failed to set selected adapter in localStorage:', error)
+    return false
+  }
+}
+
+/**
+ * Get the current adapter name for cache key prefixing
+ * @returns {string} Current adapter name
+ */
+export function getCurrentAdapterName() {
+  return weatherConfig.primaryAdapter
 }
 
 /**
