@@ -114,6 +114,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
         setError(null)
         const date = selectedDay?.date ? new Date(selectedDay.date) : new Date()
 
+        console.log(`[DailyForecast] Fetching data for ${format(date, 'MMM d, yyyy')}`)
+
         // Check if this is today
         const now = new Date()
         const isToday = date.toDateString() === now.toDateString()
@@ -130,7 +132,14 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
 
         const results = await Promise.all(promises)
 
-        setHourlyData(results[0])
+        const hourly = results[0]
+        console.log(`[DailyForecast] Received hourly data:`, {
+          totalPoints: hourly.length,
+          hours: hourly.map(h => ({ hour: h.hour, temp: h.temp, isPast: h.isPast })),
+          hourRange: hourly.length > 0 ? `${hourly[0].hour} to ${hourly[hourly.length - 1].hour}` : 'none'
+        })
+
+        setHourlyData(hourly)
         setWeatherDetails(results[1])
         if (isToday && results[2]) {
           setCurrentWeather(results[2])
@@ -138,7 +147,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
           setCurrentWeather(null)
         }
       } catch (error) {
-        console.error('Failed to fetch daily forecast:', error)
+        console.error('[DailyForecast] Failed to fetch daily forecast:', error)
         setError(error.message)
         // Don't set data - leave empty to show error state
       } finally {

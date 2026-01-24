@@ -160,18 +160,22 @@ class WeatherService {
     // Try cache first
     const cached = getCache(cacheKey)
     if (cached) {
-      console.log('Using cached hourly forecast')
+      console.log(`[WeatherService] Using cached hourly forecast for ${dateStr}`)
       return cached
     }
 
     // Fetch from API with fallback
-    console.log('Fetching hourly forecast from API')
+    console.log(`[WeatherService] Fetching hourly forecast from API for ${dateStr}`)
+    console.log(`[WeatherService] Using adapter: ${this.adapter.constructor.name}`)
+
     const data = await this.executeWithFallback(
       'getHourlyForecast',
       location.latitude,
       location.longitude,
       date
     )
+
+    console.log(`[WeatherService] Received ${data.length} hourly data points for ${dateStr}`)
 
     // Cache the result
     setCache(cacheKey, data, this.cacheTTL)

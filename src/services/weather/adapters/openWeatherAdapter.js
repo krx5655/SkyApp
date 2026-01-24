@@ -37,7 +37,10 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
    */
   async fetchOneCall(latitude, longitude) {
     const url = `${this.baseUrl}?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}&exclude=minutely,alerts&units=imperial&appid=${this.apiKey}`
-    return this.fetchOpenWeather(url)
+    console.log('[OpenWeatherAdapter] Fetching One Call API...')
+    const result = await this.fetchOpenWeather(url)
+    console.log('[OpenWeatherAdapter] One Call API success - hourly entries:', result.hourly?.length)
+    return result
   }
 
   /**
@@ -50,7 +53,10 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
     // Convert date to Unix timestamp (seconds)
     const timestamp = Math.floor(date.getTime() / 1000)
     const url = `${this.baseUrl}/timemachine?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}&dt=${timestamp}&units=imperial&appid=${this.apiKey}`
-    return this.fetchOpenWeather(url)
+    console.log('[OpenWeatherAdapter] Fetching Timemachine API for date:', format(date, 'MMM d, yyyy'), 'timestamp:', timestamp)
+    const result = await this.fetchOpenWeather(url)
+    console.log('[OpenWeatherAdapter] Timemachine API success - data entries:', result.data?.length)
+    return result
   }
 
   /**
@@ -127,10 +133,13 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
     const currentHour = now.getHours()
     const todayStart = startOfDay(now)
 
+    console.log(`[OpenWeatherAdapter] getTodayHourlyForecast - Current hour: ${currentHour}`)
+
     // Fetch historical data for past hours (midnight to current hour)
     let pastHours = []
     if (currentHour > 0) {
       try {
+        console.log(`[OpenWeatherAdapter] Attempting to fetch historical data for past ${currentHour} hours...`)
         const historicalData = await this.fetchTimemachine(latitude, longitude, todayStart)
         pastHours = historicalData.data
           .filter(h => {
@@ -139,13 +148,21 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
           })
           .map(h => this.parseHourlyData(h, true))
 
-        console.log(`[openWeatherAdapter] Fetched ${pastHours.length} historical hours`)
+        console.log(`[OpenWeatherAdapter] ✓ Successfully fetched ${pastHours.length} historical hours`)
+        if (pastHours.length > 0) {
+          console.log(`[OpenWeatherAdapter] Historical hours range: ${pastHours[0].hour} to ${pastHours[pastHours.length - 1].hour}`)
+        }
       } catch (error) {
-        console.warn('[openWeatherAdapter] Failed to fetch historical data, using only future:', error.message)
+        console.error('[OpenWeatherAdapter] ✗ Failed to fetch historical data:', error.message)
+        console.error('[OpenWeatherAdapter] Error details:', error)
+        console.warn('[OpenWeatherAdapter] Continuing with future data only...')
       }
+    } else {
+      console.log(`[OpenWeatherAdapter] Current hour is 0 (midnight), skipping historical fetch`)
     }
 
     // Fetch future data (current hour onwards)
+    console.log(`[OpenWeatherAdapter] Fetching future forecast data...`)
     const forecastData = await this.fetchOneCall(latitude, longitude)
     const futureHours = forecastData.hourly
       .filter(h => {
@@ -154,10 +171,14 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
       })
       .map(h => this.parseHourlyData(h, false))
 
-    console.log(`[openWeatherAdapter] Fetched ${futureHours.length} future hours`)
+    console.log(`[OpenWeatherAdapter] ✓ Fetched ${futureHours.length} future hours`)
+    if (futureHours.length > 0) {
+      console.log(`[OpenWeatherAdapter] Future hours range: ${futureHours[0].hour} to ${futureHours[futureHours.length - 1].hour}`)
+    }
 
     // Merge past and future hours
     const allHours = [...pastHours, ...futureHours]
+    console.log(`[OpenWeatherAdapter] Merging ${pastHours.length} past + ${futureHours.length} future = ${allHours.length} total hours`)
 
     // Sort by hour and remove duplicates (keep future data for current hour)
     const hourlyMap = new Map()
@@ -169,8 +190,13 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
 
     const sortedHours = Array.from(hourlyMap.values()).sort((a, b) => a.hour - b.hour)
 
-    console.log(`[openWeatherAdapter] Today's forecast - ${sortedHours.length} hours total`)
-    console.log(`[openWeatherAdapter] Hour range: ${sortedHours[0]?.hour} to ${sortedHours[sortedHours.length - 1]?.hour}`)
+    console.log(`[OpenWeatherAdapter] ✓ Final merged data: ${sortedHours.length} hours`)
+    if (sortedHours.length > 0) {
+      console.log(`[OpenWeatherAdapter] Final hour range: ${sortedHours[0]?.hour} to ${sortedHours[sortedHours.length - 1]?.hour}`)
+      const pastCount = sortedHours.filter(h => h.isPast).length
+      const futureCount = sortedHours.filter(h => !h.isPast).length
+      console.log(`[OpenWeatherAdapter] Breakdown: ${pastCount} past hours, ${futureCount} future hours`)
+    }
 
     return sortedHours
   }
