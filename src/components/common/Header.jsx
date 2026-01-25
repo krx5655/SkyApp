@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 
-function Header({ showBackButton = false, onBack, onOpenSettings }) {
+function Header({ showBackButton = false, onBack, onOpenSettings, title = null }) {
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
@@ -41,7 +41,7 @@ function Header({ showBackButton = false, onBack, onOpenSettings }) {
 
       {/* Center - Title (optional) */}
       <div className="flex-1 text-center">
-        {/* Reserved for future title/breadcrumb */}
+        {title && <h1 className="text-2xl font-bold">{title}</h1>}
       </div>
 
       {/* Right side - Date/Time and Settings */}

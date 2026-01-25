@@ -55,9 +55,35 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
     {
       label: 'Daily',
       active: forecastView === 'daily',
-      onClick: () => setForecastView('daily'),
+      onClick: () => {
+        // If no day is selected, select today
+        if (!selectedDay && forecastData.length > 0) {
+          const today = new Date()
+          const todayForecast = forecastData.find(day => {
+            const dayDate = new Date(day.date)
+            return dayDate.toDateString() === today.toDateString()
+          })
+          if (todayForecast) {
+            setSelectedDay(todayForecast)
+          } else {
+            // If today is not in the forecast, select the first day
+            setSelectedDay(forecastData[0])
+          }
+        }
+        setForecastView('daily')
+      },
     },
   ] : []
+
+  // Determine header title based on current screen
+  let headerTitle = ''
+  if (currentScreen === 'forecast') {
+    headerTitle = forecastView === 'weekly' ? '7-Day Forecast' : 'Daily Forecast'
+  } else if (currentScreen === 'radar') {
+    headerTitle = 'Radar'
+  } else if (currentScreen === 'space') {
+    headerTitle = 'Space Weather'
+  }
 
   return (
     <div className="h-screen flex flex-col">
@@ -65,6 +91,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
         showBackButton
         onBack={onNavigateHome}
         onOpenSettings={onOpenSettings}
+        title={headerTitle}
       />
 
       <main className="flex-1 overflow-y-auto">
@@ -82,6 +109,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
                 selectedDay={selectedDay}
                 forecastData={forecastData}
                 onNavigateDay={handleNavigateDay}
+                refreshTrigger={refreshTrigger}
               />
             )}
           </>

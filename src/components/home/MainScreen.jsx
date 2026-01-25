@@ -1,16 +1,24 @@
 import { useState, useEffect } from 'react'
 import Header from '../common/Header'
 import weatherService from '../../services/weather/weatherService'
+import { getTemperatureUnit } from '../../services/weather/config'
+import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
 
 function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [tempUnit, setTempUnit] = useState('F')
 
   // Fetch current weather on mount and when location changes
   useEffect(() => {
     async function fetchCurrentWeather() {
       try {
         setLoading(true)
+
+        // Load temperature unit preference
+        const unit = getTemperatureUnit()
+        setTempUnit(unit)
+
         const weather = await weatherService.getCurrentWeather()
         setCurrentWeather(weather)
       } catch (error) {
@@ -57,27 +65,25 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
   ]
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       <Header onOpenSettings={onOpenSettings} />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-8">
+      <main className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-8">
         {/* App Title */}
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
           Weather & Sky
         </h1>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary mb-12 text-center">
-          Your personal weather and astronomy companion
-        </p>
+
 
         {/* App Icons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg w-full">
           {apps.map((app) => (
             <button
               key={app.id}
               onClick={() => onNavigate(app.id)}
               className="group relative touch-target"
             >
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br shadow-xl transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105 aspect-square flex flex-col items-center justify-center p-8 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br shadow-xl transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105 aspect-square flex flex-col items-center justify-center p-4 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
                 {/* Gradient Overlay */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${app.gradient} opacity-10 group-hover:opacity-20 transition-opacity`} />
 
@@ -105,7 +111,7 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">Current Weather</p>
-                <p className="text-3xl font-bold">{currentWeather.temp}°F</p>
+                <p className="text-3xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</p>
                 <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">{currentWeather.condition}</p>
               </div>
               <div className="text-5xl">

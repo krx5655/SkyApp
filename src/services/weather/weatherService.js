@@ -111,9 +111,13 @@ class WeatherService {
   /**
    * Set location in localStorage
    */
-  setLocation(latitude, longitude) {
+  setLocation(latitude, longitude, cityName = null) {
     try {
-      localStorage.setItem('weather_location', JSON.stringify({ latitude, longitude }))
+      const locationData = { latitude, longitude }
+      if (cityName) {
+        locationData.name = cityName
+      }
+      localStorage.setItem('weather_location', JSON.stringify(locationData))
     } catch (error) {
       console.warn('Failed to set location:', error)
     }

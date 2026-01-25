@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
 import { format, addDays } from 'date-fns'
 import weatherService from '../../services/weather/weatherService'
+import { getTemperatureUnit } from '../../services/weather/config'
+import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
 
 function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
   const [forecast, setForecast] = useState([])
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [tempUnit, setTempUnit] = useState('F')
+  const [cityName, setCityName] = useState('Unknown Location')
 
   // Fetch weather data on mount and when location changes
   useEffect(() => {
@@ -14,6 +18,15 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
       try {
         setLoading(true)
         setError(null)
+
+        // Load temperature unit preference
+        const unit = getTemperatureUnit()
+        setTempUnit(unit)
+
+        // Load city name from stored location
+        const location = weatherService.getLocation()
+        setCityName(location?.name || 'Unknown Location')
+
         const [forecastData, current] = await Promise.all([
           weatherService.getWeeklyForecast(),
           weatherService.getCurrentWeather().catch(() => null), // Don't fail if current weather fails
@@ -79,22 +92,23 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="relative text-center">
+      <div className="relative">
         {/* Current Weather in upper left */}
         {currentWeather && (
           <div className="absolute left-0 top-0 text-left">
-            <div className="text-5xl font-bold">{currentWeather.temp}°</div>
-            <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-              {currentWeather.condition}
-            </div>
+            <div className="text-3xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
           </div>
         )}
 
-        {/* Centered Header */}
-        <h2 className="text-3xl font-bold mb-2">7-Day Forecast</h2>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-          San Francisco, CA
-        </p>
+        {/* City name in upper right */}
+        <div className="absolute right-0 top-0 text-right">
+          <p className="text-xl font-semibold text-macos-text-secondary-light dark:text-macos-text-secondary">
+            {cityName}
+          </p>
+        </div>
+
+        {/* Spacer to maintain layout */}
+        <div className="h-16"></div>
       </div>
 
       {loading ? (
@@ -117,33 +131,31 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
       {forecast.length > 0 && (
         <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
           {forecast.map((day) => (
-          <button
-            key={day.id}
-            onClick={() => onDaySelect(day)}
-            className="touch-target flex-shrink-0 w-32 p-4 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border hover:border-macos-blue-light dark:hover:border-macos-blue transition-all hover:shadow-lg group"
-          >
-            <div className="text-center space-y-2">
-              <div className="font-semibold text-sm">{day.dayName}</div>
-              <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-                {day.shortDate}
-              </div>
-
-              <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform text-4xl">
-                {typeof day.icon === 'string' ? day.icon : day.icon}
-              </div>
-
-              <div className="text-xs font-medium truncate">{day.condition}</div>
-
-              <div className="flex flex-col gap-1 pt-1">
-                <div className="text-center">
-                  <div className="text-lg font-bold">{day.high}°</div>
+            <button
+              key={day.id}
+              onClick={() => onDaySelect(day)}
+              className="touch-target flex-shrink-0 w-32 p-4 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border hover:border-macos-blue-light dark:hover:border-macos-blue transition-all hover:shadow-lg group"
+            >
+              <div className="text-center space-y-2">
+                <div className="font-semibold text-sm">{day.dayName}</div>
+                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  {day.shortDate}
                 </div>
-                <div className="text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
-                  <div className="text-sm">{day.low}°</div>
+
+                <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform text-4xl">
+                  {typeof day.icon === 'string' ? day.icon : day.icon}
+                </div>
+
+                <div className="flex flex-col gap-1 pt-1">
+                  <div className="text-center">
+                    <div className="text-lg font-bold">{convertTemperature(day.high, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
+                  </div>
+                  <div className="text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
+                    <div className="text-sm">{convertTemperature(day.low, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </button>
+            </button>
           ))}
         </div>
       )}

@@ -2,12 +2,7 @@ function MoonView() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Moon Phase</h2>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-          Real-time lunar information
-        </p>
-      </div>
+
 
       {/* Moon Visualization Placeholder */}
       <div className="max-w-md mx-auto">

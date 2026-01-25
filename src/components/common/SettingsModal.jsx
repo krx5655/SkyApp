@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { searchCities } from '../../services/geocoding/geocodingService'
 import weatherService from '../../services/weather/weatherService'
 import { clearAllCache } from '../../services/weather/cache'
-import { getOpenWeatherApiKey, setOpenWeatherApiKey, getSelectedAdapter, setSelectedAdapter, hasOpenWeatherApiKey } from '../../services/weather/config'
+import { getOpenWeatherApiKey, setOpenWeatherApiKey, getSelectedAdapter, setSelectedAdapter, hasOpenWeatherApiKey, getTemperatureUnit, setTemperatureUnit, getWindSpeedUnit, setWindSpeedUnit } from '../../services/weather/config'
 
 function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [citySearch, setCitySearch] = useState('')
@@ -13,6 +13,8 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [apiKey, setApiKey] = useState('')
   const [apiKeyStatus, setApiKeyStatus] = useState('')
   const [selectedApi, setSelectedApi] = useState('openweather')
+  const [temperatureUnit, setTemperatureUnitState] = useState('F')
+  const [windSpeedUnit, setWindSpeedUnitState] = useState('mph')
 
   // Load current location, API key, and selected adapter
   useEffect(() => {
@@ -29,6 +31,13 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     // Load selected adapter
     const adapter = getSelectedAdapter()
     setSelectedApi(adapter)
+
+    // Load unit preferences
+    const tempUnit = getTemperatureUnit()
+    setTemperatureUnitState(tempUnit)
+
+    const windUnit = getWindSpeedUnit()
+    setWindSpeedUnitState(windUnit)
   }, [])
 
   // Search cities
@@ -57,8 +66,8 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   // Select location
   async function selectLocation(location) {
     setUpdatingLocation(true)
-    weatherService.setLocation(location.latitude, location.longitude)
-    setCurrentLocation({ latitude: location.latitude, longitude: longitude.longitude, name: location.city })
+    weatherService.setLocation(location.latitude, location.longitude, location.city)
+    setCurrentLocation({ latitude: location.latitude, longitude: location.longitude, name: location.city })
     setCitySearch('')
     setSearchResults([])
 
@@ -123,6 +132,26 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     setSelectedAdapter(provider)
     weatherService.switchAdapter(provider)
     clearAllCache()
+    if (onLocationChange) {
+      onLocationChange()
+    }
+  }
+
+  // Change temperature unit
+  function handleTemperatureUnitChange(unit) {
+    setTemperatureUnitState(unit)
+    setTemperatureUnit(unit)
+    // Trigger refresh to update all temperature displays
+    if (onLocationChange) {
+      onLocationChange()
+    }
+  }
+
+  // Change wind speed unit
+  function handleWindSpeedUnitChange(unit) {
+    setWindSpeedUnitState(unit)
+    setWindSpeedUnit(unit)
+    // Trigger refresh to update all wind speed displays
     if (onLocationChange) {
       onLocationChange()
     }
@@ -236,12 +265,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-4">
               {/* API Provider Selection */}
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Weather Provider</div>
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    Choose your weather data source
-                  </div>
-                </div>
+                <span className="font-medium">Weather Provider</span>
                 <select
                   value={selectedApi}
                   onChange={(e) => handleApiProviderChange(e.target.value)}
@@ -250,79 +274,59 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                   <option value="openweather" disabled={!hasOpenWeatherApiKey()}>
                     OpenWeatherMap {!hasOpenWeatherApiKey() && '(API key required)'}
                   </option>
-                  <option value="weathergov">Weather.gov (Free)</option>
+                  <option value="weathergov">Weather.gov</option>
                 </select>
               </div>
 
-              {/* Provider Info */}
-              <div className="p-3 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-                {selectedApi === 'openweather' ? (
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    <span className="font-medium text-macos-text-light dark:text-macos-text">OpenWeatherMap</span> - Full 24-hour graphs with historical data, worldwide coverage.
+              {/* OpenWeatherMap API Key - Only show when openweather is selected or being configured */}
+              {selectedApi === 'openweather' && (
+                <div className="pt-2 border-t border-macos-border-light dark:border-macos-border space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={apiKey}
+                      onChange={(e) => {
+                        setApiKey(e.target.value)
+                        setApiKeyStatus('')
+                      }}
+                      placeholder="Enter your API key"
+                      className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
+                    />
+                    <button
+                      onClick={saveApiKey}
+                      disabled={!apiKey.trim()}
+                      className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    >
+                      Save
+                    </button>
                   </div>
-                ) : (
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    <span className="font-medium text-macos-text-light dark:text-macos-text">Weather.gov</span> - Free US-only service. Shows current hour + future forecast only.
-                  </div>
-                )}
-              </div>
 
-              {/* OpenWeatherMap API Key */}
-              <div className="pt-2 border-t border-macos-border-light dark:border-macos-border">
-                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mb-3">
-                  <p className="mb-2">
-                    Get a free OpenWeatherMap API key at <a href="https://openweathermap.org/api" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">openweathermap.org/api</a>
-                  </p>
-                  <p className="text-xs">
-                    Requires One Call API 3.0 subscription (1,000 free calls/day).
-                  </p>
+                  {apiKeyStatus === 'success' && (
+                    <div className="text-sm text-green-600 dark:text-green-400">
+                      ✓ API key saved successfully!
+                    </div>
+                  )}
+                  {apiKeyStatus === 'saved' && (
+                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                      API key configured
+                    </div>
+                  )}
+                  {apiKeyStatus === 'error' && (
+                    <div className="text-sm text-red-600 dark:text-red-400">
+                      Failed to save API key
+                    </div>
+                  )}
+
+                  {apiKey && (
+                    <button
+                      onClick={removeApiKey}
+                      className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                    >
+                      Remove API key
+                    </button>
+                  )}
                 </div>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={apiKey}
-                    onChange={(e) => {
-                      setApiKey(e.target.value)
-                      setApiKeyStatus('')
-                    }}
-                    placeholder="Enter your OpenWeatherMap API key"
-                    className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
-                  />
-                  <button
-                    onClick={saveApiKey}
-                    disabled={!apiKey.trim()}
-                    className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                  >
-                    Save
-                  </button>
-                </div>
-
-                {apiKeyStatus === 'success' && (
-                  <div className="text-sm text-green-600 dark:text-green-400 mt-2">
-                    ✓ API key saved! You can now select OpenWeatherMap as your provider.
-                  </div>
-                )}
-                {apiKeyStatus === 'saved' && (
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mt-2">
-                    API key configured
-                  </div>
-                )}
-                {apiKeyStatus === 'error' && (
-                  <div className="text-sm text-red-600 dark:text-red-400 mt-2">
-                    Failed to save API key
-                  </div>
-                )}
-
-                {apiKey && (
-                  <button
-                    onClick={removeApiKey}
-                    className="text-sm text-red-600 dark:text-red-400 hover:underline mt-2"
-                  >
-                    Remove API key
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </section>
 
@@ -332,17 +336,25 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-medium">Temperature</span>
-                <select className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-                  <option>Fahrenheit (°F)</option>
-                  <option>Celsius (°C)</option>
+                <select
+                  value={temperatureUnit}
+                  onChange={(e) => handleTemperatureUnitChange(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                >
+                  <option value="F">Fahrenheit (°F)</option>
+                  <option value="C">Celsius (°C)</option>
                 </select>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Wind Speed</span>
-                <select className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-                  <option>Miles per hour (mph)</option>
-                  <option>Kilometers per hour (km/h)</option>
-                  <option>Meters per second (m/s)</option>
+                <select
+                  value={windSpeedUnit}
+                  onChange={(e) => handleWindSpeedUnitChange(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                >
+                  <option value="mph">Miles per hour (mph)</option>
+                  <option value="kmh">Kilometers per hour (km/h)</option>
+                  <option value="ms">Meters per second (m/s)</option>
                 </select>
               </div>
             </div>

@@ -60,6 +60,22 @@ export const WeatherIcons = {
   WIND: 'wind',
 }
 
+/**
+ * Standard emoji icons for weather conditions
+ * Use these for consistent visual representation across all API adapters
+ */
+export const WeatherEmojis = {
+  SUNNY: '☀️',
+  MOON: '🌙',
+  PARTLY_CLOUDY: '⛅',
+  CLOUDY: '☁️',
+  RAINY: '🌧️',
+  STORMY: '⛈️',
+  SNOWY: '❄️',
+  FOGGY: '🌫️',
+}
+
 export default {
   WeatherIcons,
+  WeatherEmojis,
 }

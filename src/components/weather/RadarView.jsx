@@ -2,12 +2,7 @@ function RadarView() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Weather Radar</h2>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-          San Francisco, CA
-        </p>
-      </div>
+
 
       {/* Radar Map Placeholder */}
       <div className="relative rounded-2xl overflow-hidden bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border aspect-video max-w-4xl mx-auto">
