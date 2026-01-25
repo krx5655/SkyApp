@@ -51,6 +51,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
   const [windUnit, setWindUnit] = useState('mph')
   const [hoveredTempHour, setHoveredTempHour] = useState(null)
   const [hoveredPrecipHour, setHoveredPrecipHour] = useState(null)
+  const [isDarkMode, setIsDarkMode] = useState(false)
   const controls = useAnimation()
 
   // Get next and previous days for swipe navigation
@@ -147,6 +148,25 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
   const handlePrecipGraphMouseLeave = () => {
     setHoveredPrecipHour(null)
   }
+
+  // Detect theme changes
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
+    }
+
+    // Check initial theme
+    checkTheme()
+
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   // Fetch hourly data and weather details when selectedDay changes
   useEffect(() => {
@@ -252,8 +272,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
   const maxPrecip = allPrecip.length > 0 ? Math.max(...allPrecip) : 100
   const precipYMax = Math.ceil(maxPrecip / 20) * 20
 
-  // Always show these hours on X-axis: 12AM, 6AM, 12PM, 6PM
-  const displayHours = [0, 6, 12, 18]
+  // Always show these hours on X-axis: every 2 hours
+  const displayHours = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
 
   return (
     <motion.div
@@ -439,13 +459,13 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
                     return (
                       <>
-                        {/* Vertical line - solid */}
+                        {/* Vertical line - solid, theme-aware */}
                         <line
                           x1={(indicatorHour / hourRange) * 100}
                           y1="0"
                           x2={(indicatorHour / hourRange) * 100}
                           y2="200"
-                          stroke="white"
+                          stroke={isDarkMode ? "white" : "black"}
                           strokeWidth="0.5"
                           opacity="0.8"
                         />
@@ -466,11 +486,15 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                     hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
                     `${hoveredData.hour - 12}:00 PM`
 
+                  // Calculate left position and clamp to prevent off-screen
+                  const rawLeftPercent = (hoveredTempHour / hourRange) * 100
+                  const clampedLeftPercent = Math.max(8, Math.min(92, rawLeftPercent))
+
                   return (
                     <div
                       className="absolute top-0 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border rounded-lg p-2 shadow-lg z-20 pointer-events-none"
                       style={{
-                        left: `${(hoveredTempHour / hourRange) * 100}%`,
+                        left: `${clampedLeftPercent}%`,
                         transform: 'translateX(-50%)'
                       }}
                     >
@@ -529,9 +553,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
               {/* Y-axis temperature scale */}
               <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary py-8">
-                <div>{yAxisMax}°</div>
-                <div>{Math.floor((yAxisMax + yAxisMin) / 2)}°</div>
-                <div>{yAxisMin}°</div>
+                <div>{convertTemperature(yAxisMax, tempUnit)}°</div>
+                <div>{convertTemperature(Math.floor((yAxisMax + yAxisMin) / 2), tempUnit)}°</div>
+                <div>{convertTemperature(yAxisMin, tempUnit)}°</div>
               </div>
             </div>
           </div>
@@ -541,9 +565,6 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
             {/* Precipitation title overlay in top-left */}
             <div className="absolute top-6 left-6 z-10">
               <div className="text-2xl font-bold">Precipitation</div>
-              <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                {isToday ? `${hourlyData.length}-hour forecast` : '24-hour forecast'}
-              </div>
             </div>
 
             {/* Graph container */}
@@ -663,13 +684,13 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
                     return (
                       <>
-                        {/* Vertical line - solid */}
+                        {/* Vertical line - solid, theme-aware */}
                         <line
                           x1={(indicatorHour / hourRange) * 100}
                           y1="0"
                           x2={(indicatorHour / hourRange) * 100}
                           y2="200"
-                          stroke="white"
+                          stroke={isDarkMode ? "white" : "black"}
                           strokeWidth="0.5"
                           opacity="0.8"
                         />
@@ -690,11 +711,15 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                     hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
                     `${hoveredData.hour - 12}:00 PM`
 
+                  // Calculate left position and clamp to prevent off-screen
+                  const rawLeftPercent = (hoveredPrecipHour / hourRange) * 100
+                  const clampedLeftPercent = Math.max(8, Math.min(92, rawLeftPercent))
+
                   return (
                     <div
                       className="absolute top-0 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border rounded-lg p-2 shadow-lg z-20 pointer-events-none"
                       style={{
-                        left: `${(hoveredPrecipHour / hourRange) * 100}%`,
+                        left: `${clampedLeftPercent}%`,
                         transform: 'translateX(-50%)'
                       }}
                     >
@@ -759,23 +784,17 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
         </div>
       )}
 
-      {/* Grid Container for smaller cards */}
+      {/* Individual Weather Detail Cards */}
       {weatherDetails && (
         <div className="grid grid-cols-12 gap-4">
-          {/* Weather Details - 3/12 columns (25%) */}
-          <div className="col-span-3 p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-            <h3 className="text-lg font-semibold mb-4">Weather Details</h3>
-            <div className="space-y-4">
-              {Object.entries(weatherDetails).map(([key, value]) => (
-                <div key={key} className="flex flex-col">
-                  <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary capitalize mb-1">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}
-                  </div>
-                  <div className="text-lg font-semibold">{convertWeatherDetailValue(key, value)}</div>
-                </div>
-              ))}
+          {Object.entries(weatherDetails).map(([key, value]) => (
+            <div key={key} className="col-span-2 p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+              <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary capitalize mb-2">
+                {key.replace(/([A-Z])/g, ' $1').trim()}
+              </div>
+              <div className="text-lg font-semibold">{convertWeatherDetailValue(key, value)}</div>
             </div>
-          </div>
+          ))}
         </div>
       )}
 
