@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { motion, useAnimation } from 'framer-motion'
 import weatherService from '../../services/weather/weatherService'
 import { getTemperatureUnit, getWindSpeedUnit } from '../../services/weather/config'
-import { convertTemperature, getTemperatureSymbol, convertWindSpeed, getWindSpeedSymbol } from '../../services/weather/unitConversion'
+import { convertTemperature, getTemperatureSymbol, convertWindSpeed, getWindSpeedSymbol, convertWindString } from '../../services/weather/unitConversion'
 
 /**
  * Generate smooth curve path using Catmull-Rom spline
@@ -178,6 +178,14 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
   // Check if selected day is today
   const now = new Date()
   const isToday = displayDate.toDateString() === now.toDateString()
+
+  // Helper function to convert weather detail values based on unit preferences
+  const convertWeatherDetailValue = (key, value) => {
+    if (key === 'wind' && typeof value === 'string') {
+      return convertWindString(value, windUnit)
+    }
+    return value
+  }
 
   // Calculate temperature range for Y-axis with ±10° padding
   const allTemps = hourlyData.length > 0 ? hourlyData.map(d => d.temp) : []
@@ -561,25 +569,6 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     )
                   })()}
 
-                  {/* Dots at display hours where data exists */}
-                  {displayHours.map((hour) => {
-                    const data = hourlyData.find(d => d.hour === hour)
-                    if (!data) return null
-                    const x = (data.hour / hourRange) * 100
-                    const y = 200 - ((data.precipitation / 110) * 200)
-                    return (
-                      <circle
-                        key={hour}
-                        cx={x}
-                        cy={y}
-                        r="1.5"
-                        fill="white"
-                        stroke="rgb(6, 182, 212)"
-                        strokeWidth="0.5"
-                      />
-                    )
-                  })}
-
                   {/* Current time indicator - always show for today */}
                   {isToday && (
                     <>
@@ -657,7 +646,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                   <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary capitalize mb-1">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </div>
-                  <div className="text-lg font-semibold">{value}</div>
+                  <div className="text-lg font-semibold">{convertWeatherDetailValue(key, value)}</div>
                 </div>
               ))}
             </div>

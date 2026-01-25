@@ -140,8 +140,6 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
                 {typeof day.icon === 'string' ? day.icon : day.icon}
               </div>
 
-              <div className="text-xs font-medium truncate">{day.condition}</div>
-
               <div className="flex flex-col gap-1 pt-1">
                 <div className="text-center">
                   <div className="text-lg font-bold">{convertTemperature(day.high, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>

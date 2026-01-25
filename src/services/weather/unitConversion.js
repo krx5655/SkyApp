@@ -74,3 +74,27 @@ export function getWindSpeedSymbol(unit) {
       return 'mph'
   }
 }
+
+/**
+ * Parse and convert a wind string (e.g., "12 mph NW")
+ * @param {string} windString - Wind string from API (e.g., "12 mph NW")
+ * @param {string} targetUnit - 'mph', 'kmh', or 'ms'
+ * @returns {string} Converted wind string (e.g., "19 km/h NW")
+ */
+export function convertWindString(windString, targetUnit) {
+  if (!windString) return windString
+
+  // Parse the wind string: "12 mph NW" -> [12, "NW"]
+  const match = windString.match(/^(\d+)\s*mph\s*(.*)$/)
+  if (!match) return windString
+
+  const speedInMph = parseInt(match[1], 10)
+  const direction = match[2].trim()
+
+  // Convert speed to target unit
+  const convertedSpeed = convertWindSpeed(speedInMph, targetUnit)
+  const unitSymbol = getWindSpeedSymbol(targetUnit)
+
+  // Rebuild string
+  return direction ? `${convertedSpeed} ${unitSymbol} ${direction}` : `${convertedSpeed} ${unitSymbol}`
+}
