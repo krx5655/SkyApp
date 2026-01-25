@@ -128,6 +128,7 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
 
   /**
    * Get today's hourly forecast (merge past + future with isPast flag)
+   * Always returns 24 hours of data, interpolating missing hours if needed
    */
   async getTodayHourlyForecast(latitude, longitude, now) {
     const currentHour = now.getHours()
@@ -135,35 +136,19 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
 
     console.log(`[OpenWeatherAdapter] getTodayHourlyForecast - Current hour: ${currentHour}`)
 
-    // Fetch historical data for past hours (midnight to current hour)
-    let pastHours = []
-    if (currentHour > 0) {
-      try {
-        console.log(`[OpenWeatherAdapter] Attempting to fetch historical data for past ${currentHour} hours...`)
-        const historicalData = await this.fetchTimemachine(latitude, longitude, todayStart)
-        pastHours = historicalData.data
-          .filter(h => {
-            const hourTime = new Date(h.dt * 1000)
-            return hourTime.getHours() < currentHour
-          })
-          .map(h => this.parseHourlyData(h, true))
-
-        console.log(`[OpenWeatherAdapter] ✓ Successfully fetched ${pastHours.length} historical hours`)
-        if (pastHours.length > 0) {
-          console.log(`[OpenWeatherAdapter] Historical hours range: ${pastHours[0].hour} to ${pastHours[pastHours.length - 1].hour}`)
-        }
-      } catch (error) {
-        console.error('[OpenWeatherAdapter] ✗ Failed to fetch historical data:', error.message)
-        console.error('[OpenWeatherAdapter] Error details:', error)
-        console.warn('[OpenWeatherAdapter] Continuing with future data only...')
-      }
-    } else {
-      console.log(`[OpenWeatherAdapter] Current hour is 0 (midnight), skipping historical fetch`)
-    }
-
-    // Fetch future data (current hour onwards)
+    // Fetch future data first (we always need this)
     console.log(`[OpenWeatherAdapter] Fetching future forecast data...`)
     const forecastData = await this.fetchOneCall(latitude, longitude)
+
+    // Get today's daily data for interpolation
+    const todayDailyData = forecastData.daily.find(d => {
+      const dayTime = new Date(d.dt * 1000)
+      return startOfDay(dayTime).getTime() === todayStart.getTime()
+    }) || forecastData.daily[0]
+
+    console.log(`[OpenWeatherAdapter] Daily data for today - High: ${Math.round(todayDailyData.temp.max)}°, Low: ${Math.round(todayDailyData.temp.min)}°`)
+
+    // Extract future hours for today from One Call API
     const futureHours = forecastData.hourly
       .filter(h => {
         const hourTime = new Date(h.dt * 1000)
@@ -171,16 +156,52 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
       })
       .map(h => this.parseHourlyData(h, false))
 
-    console.log(`[OpenWeatherAdapter] ✓ Fetched ${futureHours.length} future hours`)
+    console.log(`[OpenWeatherAdapter] ✓ Fetched ${futureHours.length} future hours from One Call API`)
     if (futureHours.length > 0) {
-      console.log(`[OpenWeatherAdapter] Future hours range: ${futureHours[0].hour} to ${futureHours[futureHours.length - 1].hour}`)
+      console.log(`[OpenWeatherAdapter] Future hours: ${futureHours.map(h => h.hour).join(', ')}`)
+    }
+
+    // Fetch historical data for past hours (midnight to current hour)
+    let pastHours = []
+    if (currentHour > 0) {
+      try {
+        console.log(`[OpenWeatherAdapter] Attempting to fetch historical data for hours 0-${currentHour - 1}...`)
+        const historicalData = await this.fetchTimemachine(latitude, longitude, todayStart)
+
+        console.log(`[OpenWeatherAdapter] Timemachine returned ${historicalData.data?.length || 0} data points`)
+
+        if (historicalData.data && historicalData.data.length > 0) {
+          // Log all hours returned from timemachine
+          const allHistoricalHours = historicalData.data.map(h => new Date(h.dt * 1000).getHours())
+          console.log(`[OpenWeatherAdapter] Timemachine hours available: ${allHistoricalHours.join(', ')}`)
+
+          pastHours = historicalData.data
+            .filter(h => {
+              const hourTime = new Date(h.dt * 1000)
+              const hour = hourTime.getHours()
+              // Include all hours before current hour
+              return hour < currentHour
+            })
+            .map(h => this.parseHourlyData(h, true))
+
+          console.log(`[OpenWeatherAdapter] ✓ Filtered to ${pastHours.length} historical hours (before hour ${currentHour})`)
+          if (pastHours.length > 0) {
+            console.log(`[OpenWeatherAdapter] Historical hours: ${pastHours.map(h => h.hour).join(', ')}`)
+          }
+        }
+      } catch (error) {
+        console.error('[OpenWeatherAdapter] ✗ Failed to fetch historical data:', error.message)
+        console.warn('[OpenWeatherAdapter] Will interpolate missing past hours using daily data')
+      }
+    } else {
+      console.log(`[OpenWeatherAdapter] Current hour is 0 (midnight), no historical data needed`)
     }
 
     // Merge past and future hours
     const allHours = [...pastHours, ...futureHours]
     console.log(`[OpenWeatherAdapter] Merging ${pastHours.length} past + ${futureHours.length} future = ${allHours.length} total hours`)
 
-    // Sort by hour and remove duplicates (keep future data for current hour)
+    // Create hour map and deduplicate (keep future data for current hour)
     const hourlyMap = new Map()
     allHours.forEach(h => {
       if (!hourlyMap.has(h.hour) || !h.isPast) {
@@ -188,17 +209,64 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
       }
     })
 
-    const sortedHours = Array.from(hourlyMap.values()).sort((a, b) => a.hour - b.hour)
-
-    console.log(`[OpenWeatherAdapter] ✓ Final merged data: ${sortedHours.length} hours`)
-    if (sortedHours.length > 0) {
-      console.log(`[OpenWeatherAdapter] Final hour range: ${sortedHours[0]?.hour} to ${sortedHours[sortedHours.length - 1]?.hour}`)
-      const pastCount = sortedHours.filter(h => h.isPast).length
-      const futureCount = sortedHours.filter(h => !h.isPast).length
-      console.log(`[OpenWeatherAdapter] Breakdown: ${pastCount} past hours, ${futureCount} future hours`)
+    // Check for missing hours and interpolate if needed
+    const missingHours = []
+    for (let hour = 0; hour < 24; hour++) {
+      if (!hourlyMap.has(hour)) {
+        missingHours.push(hour)
+      }
     }
 
+    if (missingHours.length > 0) {
+      console.log(`[OpenWeatherAdapter] Missing hours: ${missingHours.join(', ')}`)
+      console.log(`[OpenWeatherAdapter] Interpolating ${missingHours.length} missing hours using daily data`)
+
+      // Interpolate missing hours using daily data
+      missingHours.forEach(hour => {
+        const interpolated = this.interpolateHour(hour, todayStart, todayDailyData, hour < currentHour)
+        hourlyMap.set(hour, interpolated)
+      })
+    }
+
+    const sortedHours = Array.from(hourlyMap.values()).sort((a, b) => a.hour - b.hour)
+
+    console.log(`[OpenWeatherAdapter] ✓ Final data: ${sortedHours.length} hours`)
+    console.log(`[OpenWeatherAdapter] Final hours: ${sortedHours.map(h => h.hour).join(', ')}`)
+    const pastCount = sortedHours.filter(h => h.isPast).length
+    const futureCount = sortedHours.filter(h => !h.isPast).length
+    const interpolatedCount = sortedHours.filter(h => h.isInterpolated).length
+    console.log(`[OpenWeatherAdapter] Breakdown: ${pastCount} past, ${futureCount} future, ${interpolatedCount} interpolated`)
+
     return sortedHours
+  }
+
+  /**
+   * Interpolate a single hour's data using daily high/low
+   */
+  interpolateHour(hour, dayStart, dailyData, isPast) {
+    const dailyHigh = Math.round(dailyData.temp.max)
+    const dailyLow = Math.round(dailyData.temp.min)
+    const dailyCondition = dailyData.weather[0].description
+    const dailyIcon = this.mapConditionToIcon(dailyData.weather[0].id, dailyData.weather[0].icon)
+
+    // Temperature curve: low at 6am, high at 3pm (hour 15)
+    // Using a sine curve that peaks at 3pm
+    const tempFactor = Math.sin(((hour - 6) / 24) * Math.PI * 2) * 0.5 + 0.5
+    const temp = Math.round(dailyLow + (dailyHigh - dailyLow) * tempFactor)
+
+    return {
+      hour,
+      time: addHours(dayStart, hour),
+      temp,
+      precipitation: Math.round((dailyData.pop || 0) * 100),
+      condition: dailyCondition,
+      icon: dailyIcon,
+      windSpeed: Math.round(dailyData.wind_speed),
+      windDirection: this.degreesToCardinal(dailyData.wind_deg),
+      humidity: dailyData.humidity,
+      isPast,
+      isInterpolated: true, // Mark as interpolated for debugging
+    }
   }
 
   /**

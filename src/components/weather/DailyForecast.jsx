@@ -287,7 +287,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                 </div>
 
                 {/* SVG for line chart and gradient */}
-                <svg className="absolute top-8 left-0 right-12 bottom-8" width="100%" height="calc(100% - 64px)" preserveAspectRatio="none">
+                <svg
+                  className="absolute top-8 left-0 right-12 bottom-8"
+                  viewBox="0 0 100 200"
+                  preserveAspectRatio="none"
+                  style={{ width: '100%', height: 'calc(100% - 64px)' }}
+                >
                   <defs>
                     <linearGradient id="tempGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="rgb(59, 130, 246)" stopOpacity="0.5" />
@@ -339,7 +344,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                             )}
                             fill="none"
                             stroke="rgb(59, 130, 246)"
-                            strokeWidth="2"
+                            strokeWidth="0.8"
                             opacity="0.3"
                             vectorEffect="non-scaling-stroke"
                           />
@@ -357,7 +362,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                             )}
                             fill="none"
                             stroke="rgb(59, 130, 246)"
-                            strokeWidth="2"
+                            strokeWidth="0.8"
                             vectorEffect="non-scaling-stroke"
                           />
                         )}
@@ -372,21 +377,21 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     <>
                       {/* Vertical line */}
                       <line
-                        x1={`${(currentHour / hourRange) * 100}%`}
+                        x1={(currentHour / hourRange) * 100}
                         y1="0"
-                        x2={`${(currentHour / hourRange) * 100}%`}
-                        y2="100%"
+                        x2={(currentHour / hourRange) * 100}
+                        y2="200"
                         stroke="white"
-                        strokeWidth="2"
+                        strokeWidth="0.5"
                         opacity="0.8"
-                        strokeDasharray="4 4"
+                        strokeDasharray="2 2"
                       />
                       {/* "Now" label */}
                       <text
-                        x={`${(currentHour / hourRange) * 100}%`}
-                        y="10"
+                        x={(currentHour / hourRange) * 100}
+                        y="8"
                         fill="white"
-                        fontSize="10"
+                        fontSize="6"
                         fontWeight="bold"
                         textAnchor="middle"
                       >
@@ -473,7 +478,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                 </div>
 
                 {/* SVG for line chart and gradient */}
-                <svg className="absolute top-8 left-0 right-12 bottom-8" width="100%" height="calc(100% - 64px)" preserveAspectRatio="none">
+                <svg
+                  className="absolute top-8 left-0 right-12 bottom-8"
+                  viewBox="0 0 100 200"
+                  preserveAspectRatio="none"
+                  style={{ width: '100%', height: 'calc(100% - 64px)' }}
+                >
                   <defs>
                     <linearGradient id="precipGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="rgb(6, 182, 212)" stopOpacity="0.5" />
@@ -525,7 +535,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                             )}
                             fill="none"
                             stroke="rgb(6, 182, 212)"
-                            strokeWidth="2"
+                            strokeWidth="0.8"
                             opacity="0.3"
                             vectorEffect="non-scaling-stroke"
                           />
@@ -543,7 +553,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                             )}
                             fill="none"
                             stroke="rgb(6, 182, 212)"
-                            strokeWidth="2"
+                            strokeWidth="0.8"
                             vectorEffect="non-scaling-stroke"
                           />
                         )}
@@ -560,12 +570,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     return (
                       <circle
                         key={hour}
-                        cx={`${x}%`}
-                        cy={`${y}%`}
-                        r="3"
+                        cx={x}
+                        cy={y}
+                        r="1.5"
                         fill="white"
                         stroke="rgb(6, 182, 212)"
-                        strokeWidth="2"
+                        strokeWidth="0.5"
                       />
                     )
                   })}
@@ -575,21 +585,21 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     <>
                       {/* Vertical line */}
                       <line
-                        x1={`${(currentHour / hourRange) * 100}%`}
+                        x1={(currentHour / hourRange) * 100}
                         y1="0"
-                        x2={`${(currentHour / hourRange) * 100}%`}
-                        y2="100%"
+                        x2={(currentHour / hourRange) * 100}
+                        y2="200"
                         stroke="white"
-                        strokeWidth="2"
+                        strokeWidth="0.5"
                         opacity="0.8"
-                        strokeDasharray="4 4"
+                        strokeDasharray="2 2"
                       />
                       {/* "Now" label */}
                       <text
-                        x={`${(currentHour / hourRange) * 100}%`}
-                        y="10"
+                        x={(currentHour / hourRange) * 100}
+                        y="8"
                         fill="white"
-                        fontSize="10"
+                        fontSize="6"
                         fontWeight="bold"
                         textAnchor="middle"
                       >
