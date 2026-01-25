@@ -272,8 +272,10 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
   const maxPrecip = allPrecip.length > 0 ? Math.max(...allPrecip) : 100
   const precipYMax = Math.ceil(maxPrecip / 20) * 20
 
-  // Always show these hours on X-axis: every 2 hours
+  // Show weather icons every 2 hours
   const displayHours = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
+  // Show time labels only at 12AM, 6AM, 12PM, 6PM
+  const displayTimeLabels = [0, 6, 12, 18]
 
   return (
     <motion.div
@@ -508,7 +510,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
                 {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
                 <div className="absolute bottom-0 left-0 right-12 pointer-events-none">
-                  {displayHours.map((hour) => {
+                  {displayTimeLabels.map((hour) => {
                     const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
                     const xPos = (hour / hourRange) * 100
                     return (
@@ -709,7 +711,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
                 {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
                 <div className="absolute bottom-0 left-0 right-12 pointer-events-none">
-                  {displayHours.map((hour) => {
+                  {displayTimeLabels.map((hour) => {
                     const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
                     const xPos = (hour / hourRange) * 100
                     return (
@@ -741,9 +743,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
       {/* Individual Weather Detail Cards */}
       {weatherDetails && (
-        <div className="grid grid-cols-12 gap-4">
+        <div className="flex gap-4">
           {Object.entries(weatherDetails).map(([key, value]) => (
-            <div key={key} className="col-span-2 p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+            <div key={key} className="w-32 h-32 p-4 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex flex-col justify-center">
               <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary capitalize mb-2">
                 {key.replace(/([A-Z])/g, ' $1').trim()}
               </div>

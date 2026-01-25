@@ -45,12 +45,23 @@ function SkyApp({ onNavigateHome, onOpenSettings }) {
 
   const showCompass = (currentScreen === 'planets' && planetView === 'earth') || currentScreen === 'stars'
 
+  // Determine header title based on current screen
+  let headerTitle = ''
+  if (currentScreen === 'moon') {
+    headerTitle = 'Moon'
+  } else if (currentScreen === 'planets') {
+    headerTitle = 'Planets'
+  } else if (currentScreen === 'stars') {
+    headerTitle = 'Stars'
+  }
+
   return (
     <div className="h-screen flex flex-col">
       <Header
         showBackButton
         onBack={onNavigateHome}
         onOpenSettings={onOpenSettings}
+        title={headerTitle}
       />
 
       {showCompass && (

@@ -92,7 +92,7 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="relative text-center">
+      <div className="relative">
         {/* Current Weather in upper left */}
         {currentWeather && (
           <div className="absolute left-0 top-0 text-left">
@@ -100,11 +100,15 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
           </div>
         )}
 
-        {/* Centered Header */}
-        <h2 className="text-3xl font-bold mb-2">7-Day Forecast</h2>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-          {cityName}
-        </p>
+        {/* City name in upper right */}
+        <div className="absolute right-0 top-0 text-right">
+          <p className="text-xl font-semibold text-macos-text-secondary-light dark:text-macos-text-secondary">
+            {cityName}
+          </p>
+        </div>
+
+        {/* Spacer to maintain layout */}
+        <div className="h-16"></div>
       </div>
 
       {loading ? (
