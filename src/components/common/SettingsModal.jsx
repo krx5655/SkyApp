@@ -66,8 +66,8 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   // Select location
   async function selectLocation(location) {
     setUpdatingLocation(true)
-    weatherService.setLocation(location.latitude, location.longitude)
-    setCurrentLocation({ latitude: location.latitude, longitude: longitude.longitude, name: location.city })
+    weatherService.setLocation(location.latitude, location.longitude, location.city)
+    setCurrentLocation({ latitude: location.latitude, longitude: location.longitude, name: location.city })
     setCitySearch('')
     setSearchResults([])
 

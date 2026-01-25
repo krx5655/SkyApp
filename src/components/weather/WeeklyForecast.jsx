@@ -10,6 +10,7 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [tempUnit, setTempUnit] = useState('F')
+  const [cityName, setCityName] = useState('Unknown Location')
 
   // Fetch weather data on mount and when location changes
   useEffect(() => {
@@ -21,6 +22,10 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
         // Load temperature unit preference
         const unit = getTemperatureUnit()
         setTempUnit(unit)
+
+        // Load city name from stored location
+        const location = weatherService.getLocation()
+        setCityName(location?.name || 'Unknown Location')
 
         const [forecastData, current] = await Promise.all([
           weatherService.getWeeklyForecast(),
@@ -101,7 +106,7 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
         {/* Centered Header */}
         <h2 className="text-3xl font-bold mb-2">7-Day Forecast</h2>
         <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-          San Francisco, CA
+          {cityName}
         </p>
       </div>
 

@@ -49,6 +49,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
   const [error, setError] = useState(null)
   const [tempUnit, setTempUnit] = useState('F')
   const [windUnit, setWindUnit] = useState('mph')
+  const [hoveredTempHour, setHoveredTempHour] = useState(null)
+  const [hoveredPrecipHour, setHoveredPrecipHour] = useState(null)
   const controls = useAnimation()
 
   // Get next and previous days for swipe navigation
@@ -110,17 +112,54 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
     }
   }
 
+  // Handle mouse move on temperature graph
+  const handleTempGraphMouseMove = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const graphWidth = rect.width
+
+    // Calculate hour from X position (0-23 range)
+    const hour = Math.round((x / graphWidth) * 23)
+    const clampedHour = Math.max(0, Math.min(23, hour))
+
+    setHoveredTempHour(clampedHour)
+  }
+
+  // Handle mouse leave on temperature graph
+  const handleTempGraphMouseLeave = () => {
+    setHoveredTempHour(null)
+  }
+
+  // Handle mouse move on precipitation graph
+  const handlePrecipGraphMouseMove = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const graphWidth = rect.width
+
+    // Calculate hour from X position (0-23 range)
+    const hour = Math.round((x / graphWidth) * 23)
+    const clampedHour = Math.max(0, Math.min(23, hour))
+
+    setHoveredPrecipHour(clampedHour)
+  }
+
+  // Handle mouse leave on precipitation graph
+  const handlePrecipGraphMouseLeave = () => {
+    setHoveredPrecipHour(null)
+  }
+
   // Fetch hourly data and weather details when selectedDay changes
   useEffect(() => {
+    // Load unit preferences (outside async to avoid extra renders)
+    const tempUnitPref = getTemperatureUnit()
+    const windUnitPref = getWindSpeedUnit()
+
     async function fetchData() {
       try {
+        // Batch initial state updates
         setLoading(true)
         setError(null)
-
-        // Load unit preferences
-        const tempUnitPref = getTemperatureUnit()
         setTempUnit(tempUnitPref)
-        const windUnitPref = getWindSpeedUnit()
         setWindUnit(windUnitPref)
 
         const date = selectedDay?.date ? new Date(selectedDay.date) : new Date()
@@ -150,18 +189,15 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
           hourRange: hourly.length > 0 ? `${hourly[0].hour} to ${hourly[hourly.length - 1].hour}` : 'none'
         })
 
+        // Batch data updates - React 18 will automatically batch these
         setHourlyData(hourly)
         setWeatherDetails(results[1])
-        if (isToday && results[2]) {
-          setCurrentWeather(results[2])
-        } else {
-          setCurrentWeather(null)
-        }
+        setCurrentWeather(isToday && results[2] ? results[2] : null)
+        setLoading(false)
       } catch (error) {
         console.error('[DailyForecast] Failed to fetch daily forecast:', error)
+        // Batch error state updates
         setError(error.message)
-        // Don't set data - leave empty to show error state
-      } finally {
         setLoading(false)
       }
     }
@@ -287,7 +323,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
             {/* Graph container */}
             <div className="relative flex mt-16">
               {/* Main graph area */}
-              <div className="flex-1 relative" style={{ height: '240px' }}>
+              <div
+                className="flex-1 relative cursor-crosshair"
+                style={{ height: '240px' }}
+                onMouseMove={handleTempGraphMouseMove}
+                onMouseLeave={handleTempGraphMouseLeave}
+              >
                 {/* Weather icons row - show at display hours where data exists */}
                 <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
                   {displayHours.map((hour) => {
@@ -391,23 +432,54 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
 
 
 
-                  {/* Current time indicator - always show for today */}
-                  {isToday && (
-                    <>
-                      {/* Vertical line */}
-                      <line
-                        x1={(currentHour / hourRange) * 100}
-                        y1="0"
-                        x2={(currentHour / hourRange) * 100}
-                        y2="200"
-                        stroke="white"
-                        strokeWidth="0.5"
-                        opacity="0.8"
-                        strokeDasharray="2 2"
-                      />
-                    </>
-                  )}
+                  {/* Time indicator - shows hovered hour or current hour */}
+                  {(() => {
+                    const indicatorHour = hoveredTempHour !== null ? hoveredTempHour : (isToday ? currentHour : null)
+                    if (indicatorHour === null) return null
+
+                    return (
+                      <>
+                        {/* Vertical line - solid */}
+                        <line
+                          x1={(indicatorHour / hourRange) * 100}
+                          y1="0"
+                          x2={(indicatorHour / hourRange) * 100}
+                          y2="200"
+                          stroke="white"
+                          strokeWidth="0.5"
+                          opacity="0.8"
+                        />
+                      </>
+                    )
+                  })()}
                 </svg>
+
+                {/* Hover indicator header */}
+                {hoveredTempHour !== null && (() => {
+                  const hoveredData = hourlyData.find(d => d.hour === hoveredTempHour)
+                  if (!hoveredData) return null
+
+                  const timeStr = hoveredData.hour === 0 ? '12:00 AM' :
+                    hoveredData.hour === 12 ? '12:00 PM' :
+                    hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
+                    `${hoveredData.hour - 12}:00 PM`
+
+                  return (
+                    <div
+                      className="absolute top-0 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border rounded-lg p-2 shadow-lg z-20 pointer-events-none"
+                      style={{
+                        left: `${(hoveredData.hour / hourRange) * 100}%`,
+                        transform: 'translateX(-50%)'
+                      }}
+                    >
+                      <div className="text-xs font-semibold mb-1 text-center">{timeStr}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xl">{hoveredData.icon}</div>
+                        <div className="text-lg font-bold">{convertTemperature(hoveredData.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Temperature labels - show at display hours where data exists */}
                 <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
@@ -467,7 +539,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
             {/* Graph container */}
             <div className="relative flex mt-16">
               {/* Main graph area */}
-              <div className="flex-1 relative" style={{ height: '240px' }}>
+              <div
+                className="flex-1 relative cursor-crosshair"
+                style={{ height: '240px' }}
+                onMouseMove={handlePrecipGraphMouseMove}
+                onMouseLeave={handlePrecipGraphMouseLeave}
+              >
                 {/* Weather icons row - show at display hours where data exists */}
                 <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
                   {displayHours.map((hour) => {
@@ -569,23 +646,51 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     )
                   })()}
 
-                  {/* Current time indicator - always show for today */}
-                  {isToday && (
-                    <>
-                      {/* Vertical line */}
-                      <line
-                        x1={(currentHour / hourRange) * 100}
-                        y1="0"
-                        x2={(currentHour / hourRange) * 100}
-                        y2="200"
-                        stroke="white"
-                        strokeWidth="0.5"
-                        opacity="0.8"
-                        strokeDasharray="2 2"
-                      />
-                    </>
-                  )}
+                  {/* Time indicator - shows hovered hour or current hour */}
+                  {(() => {
+                    const indicatorHour = hoveredPrecipHour !== null ? hoveredPrecipHour : (isToday ? currentHour : null)
+                    if (indicatorHour === null) return null
+
+                    return (
+                      <>
+                        {/* Vertical line - solid */}
+                        <line
+                          x1={(indicatorHour / hourRange) * 100}
+                          y1="0"
+                          x2={(indicatorHour / hourRange) * 100}
+                          y2="200"
+                          stroke="white"
+                          strokeWidth="0.5"
+                          opacity="0.8"
+                        />
+                      </>
+                    )
+                  })()}
                 </svg>
+
+                {/* Hover indicator header */}
+                {hoveredPrecipHour !== null && (() => {
+                  const hoveredData = hourlyData.find(d => d.hour === hoveredPrecipHour)
+                  if (!hoveredData) return null
+
+                  const timeStr = hoveredData.hour === 0 ? '12:00 AM' :
+                    hoveredData.hour === 12 ? '12:00 PM' :
+                    hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
+                    `${hoveredData.hour - 12}:00 PM`
+
+                  return (
+                    <div
+                      className="absolute top-0 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border rounded-lg p-2 shadow-lg z-20 pointer-events-none"
+                      style={{
+                        left: `${(hoveredData.hour / hourRange) * 100}%`,
+                        transform: 'translateX(-50%)'
+                      }}
+                    >
+                      <div className="text-xs font-semibold text-center">{timeStr}</div>
+                      <div className="text-lg font-bold text-center">{hoveredData.precipitation}%</div>
+                    </div>
+                  )
+                })()}
 
                 {/* Precipitation labels - show at display hours where data exists */}
                 <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
