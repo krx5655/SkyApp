@@ -1,5 +1,5 @@
 import BaseWeatherAdapter from './baseAdapter.js'
-import { WeatherIcons } from '../types.js'
+import { WeatherEmojis } from '../types.js'
 import { format, parseISO, startOfDay, addHours, addDays, startOfHour } from 'date-fns'
 
 /**
@@ -457,45 +457,45 @@ class OpenWeatherAdapter extends BaseWeatherAdapter {
 
     // Thunderstorm (200-232)
     if (weatherCode >= 200 && weatherCode < 300) {
-      return WeatherIcons.STORMY
+      return WeatherEmojis.STORMY
     }
 
     // Drizzle (300-321)
     if (weatherCode >= 300 && weatherCode < 400) {
-      return WeatherIcons.RAINY
+      return WeatherEmojis.RAINY
     }
 
     // Rain (500-531)
     if (weatherCode >= 500 && weatherCode < 600) {
-      return WeatherIcons.RAINY
+      return WeatherEmojis.RAINY
     }
 
     // Snow (600-622)
     if (weatherCode >= 600 && weatherCode < 700) {
-      return WeatherIcons.SNOWY
+      return WeatherEmojis.SNOWY
     }
 
     // Atmosphere (701-781) - mist, fog, etc.
     if (weatherCode >= 700 && weatherCode < 800) {
-      return WeatherIcons.FOGGY
+      return WeatherEmojis.FOGGY
     }
 
     // Clear (800)
     if (weatherCode === 800) {
-      return isNight ? '🌙' : WeatherIcons.SUNNY
+      return isNight ? WeatherEmojis.MOON : WeatherEmojis.SUNNY
     }
 
     // Clouds (801-804)
     if (weatherCode === 801 || weatherCode === 802) {
-      return WeatherIcons.PARTLY_CLOUDY
+      return WeatherEmojis.PARTLY_CLOUDY
     }
 
     if (weatherCode === 803 || weatherCode === 804) {
-      return WeatherIcons.CLOUDY
+      return WeatherEmojis.CLOUDY
     }
 
     // Default
-    return WeatherIcons.CLOUDY
+    return WeatherEmojis.CLOUDY
   }
 
   /**

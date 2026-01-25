@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { format, addDays } from 'date-fns'
 import weatherService from '../../services/weather/weatherService'
+import { getTemperatureUnit } from '../../services/weather/config'
+import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
 
 function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
   const [forecast, setForecast] = useState([])
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [tempUnit, setTempUnit] = useState('F')
 
   // Fetch weather data on mount and when location changes
   useEffect(() => {
@@ -14,6 +17,11 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
       try {
         setLoading(true)
         setError(null)
+
+        // Load temperature unit preference
+        const unit = getTemperatureUnit()
+        setTempUnit(unit)
+
         const [forecastData, current] = await Promise.all([
           weatherService.getWeeklyForecast(),
           weatherService.getCurrentWeather().catch(() => null), // Don't fail if current weather fails
@@ -83,7 +91,7 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
         {/* Current Weather in upper left */}
         {currentWeather && (
           <div className="absolute left-0 top-0 text-left">
-            <div className="text-5xl font-bold">{currentWeather.temp}°</div>
+            <div className="text-5xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
             <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
               {currentWeather.condition}
             </div>
@@ -136,10 +144,10 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
 
               <div className="flex flex-col gap-1 pt-1">
                 <div className="text-center">
-                  <div className="text-lg font-bold">{day.high}°</div>
+                  <div className="text-lg font-bold">{convertTemperature(day.high, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
                 </div>
                 <div className="text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
-                  <div className="text-sm">{day.low}°</div>
+                  <div className="text-sm">{convertTemperature(day.low, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
                 </div>
               </div>
             </div>

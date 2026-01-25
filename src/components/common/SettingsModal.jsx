@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { searchCities } from '../../services/geocoding/geocodingService'
 import weatherService from '../../services/weather/weatherService'
 import { clearAllCache } from '../../services/weather/cache'
-import { getOpenWeatherApiKey, setOpenWeatherApiKey, getSelectedAdapter, setSelectedAdapter, hasOpenWeatherApiKey } from '../../services/weather/config'
+import { getOpenWeatherApiKey, setOpenWeatherApiKey, getSelectedAdapter, setSelectedAdapter, hasOpenWeatherApiKey, getTemperatureUnit, setTemperatureUnit, getWindSpeedUnit, setWindSpeedUnit } from '../../services/weather/config'
 
 function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [citySearch, setCitySearch] = useState('')
@@ -13,6 +13,8 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [apiKey, setApiKey] = useState('')
   const [apiKeyStatus, setApiKeyStatus] = useState('')
   const [selectedApi, setSelectedApi] = useState('openweather')
+  const [temperatureUnit, setTemperatureUnitState] = useState('F')
+  const [windSpeedUnit, setWindSpeedUnitState] = useState('mph')
 
   // Load current location, API key, and selected adapter
   useEffect(() => {
@@ -29,6 +31,13 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     // Load selected adapter
     const adapter = getSelectedAdapter()
     setSelectedApi(adapter)
+
+    // Load unit preferences
+    const tempUnit = getTemperatureUnit()
+    setTemperatureUnitState(tempUnit)
+
+    const windUnit = getWindSpeedUnit()
+    setWindSpeedUnitState(windUnit)
   }, [])
 
   // Search cities
@@ -123,6 +132,26 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     setSelectedAdapter(provider)
     weatherService.switchAdapter(provider)
     clearAllCache()
+    if (onLocationChange) {
+      onLocationChange()
+    }
+  }
+
+  // Change temperature unit
+  function handleTemperatureUnitChange(unit) {
+    setTemperatureUnitState(unit)
+    setTemperatureUnit(unit)
+    // Trigger refresh to update all temperature displays
+    if (onLocationChange) {
+      onLocationChange()
+    }
+  }
+
+  // Change wind speed unit
+  function handleWindSpeedUnitChange(unit) {
+    setWindSpeedUnitState(unit)
+    setWindSpeedUnit(unit)
+    // Trigger refresh to update all wind speed displays
     if (onLocationChange) {
       onLocationChange()
     }
@@ -332,17 +361,25 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-medium">Temperature</span>
-                <select className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-                  <option>Fahrenheit (°F)</option>
-                  <option>Celsius (°C)</option>
+                <select
+                  value={temperatureUnit}
+                  onChange={(e) => handleTemperatureUnitChange(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                >
+                  <option value="F">Fahrenheit (°F)</option>
+                  <option value="C">Celsius (°C)</option>
                 </select>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Wind Speed</span>
-                <select className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-                  <option>Miles per hour (mph)</option>
-                  <option>Kilometers per hour (km/h)</option>
-                  <option>Meters per second (m/s)</option>
+                <select
+                  value={windSpeedUnit}
+                  onChange={(e) => handleWindSpeedUnitChange(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                >
+                  <option value="mph">Miles per hour (mph)</option>
+                  <option value="kmh">Kilometers per hour (km/h)</option>
+                  <option value="ms">Meters per second (m/s)</option>
                 </select>
               </div>
             </div>

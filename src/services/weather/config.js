@@ -113,3 +113,70 @@ export function clearWeatherConfig() {
     return false
   }
 }
+
+/**
+ * Get temperature unit preference from localStorage
+ * @returns {string} 'F' or 'C' (default: 'F')
+ */
+export function getTemperatureUnit() {
+  try {
+    const unit = localStorage.getItem('temperature_unit')
+    return unit === 'C' ? 'C' : 'F'
+  } catch (error) {
+    console.warn('Failed to get temperature unit from localStorage:', error)
+    return 'F'
+  }
+}
+
+/**
+ * Set temperature unit preference in localStorage
+ * @param {string} unit - 'F' or 'C'
+ * @returns {boolean} True if successful
+ */
+export function setTemperatureUnit(unit) {
+  try {
+    if (unit === 'F' || unit === 'C') {
+      localStorage.setItem('temperature_unit', unit)
+      return true
+    }
+    return false
+  } catch (error) {
+    console.warn('Failed to set temperature unit in localStorage:', error)
+    return false
+  }
+}
+
+/**
+ * Get wind speed unit preference from localStorage
+ * @returns {string} 'mph', 'kmh', or 'ms' (default: 'mph')
+ */
+export function getWindSpeedUnit() {
+  try {
+    const unit = localStorage.getItem('wind_speed_unit')
+    if (unit === 'kmh' || unit === 'ms') {
+      return unit
+    }
+    return 'mph'
+  } catch (error) {
+    console.warn('Failed to get wind speed unit from localStorage:', error)
+    return 'mph'
+  }
+}
+
+/**
+ * Set wind speed unit preference in localStorage
+ * @param {string} unit - 'mph', 'kmh', or 'ms'
+ * @returns {boolean} True if successful
+ */
+export function setWindSpeedUnit(unit) {
+  try {
+    if (unit === 'mph' || unit === 'kmh' || unit === 'ms') {
+      localStorage.setItem('wind_speed_unit', unit)
+      return true
+    }
+    return false
+  } catch (error) {
+    console.warn('Failed to set wind speed unit in localStorage:', error)
+    return false
+  }
+}

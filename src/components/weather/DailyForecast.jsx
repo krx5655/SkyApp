@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { motion, useAnimation } from 'framer-motion'
 import weatherService from '../../services/weather/weatherService'
+import { getTemperatureUnit, getWindSpeedUnit } from '../../services/weather/config'
+import { convertTemperature, getTemperatureSymbol, convertWindSpeed, getWindSpeedSymbol } from '../../services/weather/unitConversion'
 
 /**
  * Generate smooth curve path using Catmull-Rom spline
@@ -45,6 +47,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [tempUnit, setTempUnit] = useState('F')
+  const [windUnit, setWindUnit] = useState('mph')
   const controls = useAnimation()
 
   // Get next and previous days for swipe navigation
@@ -112,6 +116,13 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
       try {
         setLoading(true)
         setError(null)
+
+        // Load unit preferences
+        const tempUnitPref = getTemperatureUnit()
+        setTempUnit(tempUnitPref)
+        const windUnitPref = getWindSpeedUnit()
+        setWindUnit(windUnitPref)
+
         const date = selectedDay?.date ? new Date(selectedDay.date) : new Date()
 
         console.log(`[DailyForecast] Fetching data for ${format(date, 'MMM d, yyyy')}`)
@@ -251,15 +262,15 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
             <div className="absolute top-6 left-6 z-10">
               {isToday && currentWeather ? (
                 <>
-                  <div className="text-3xl font-bold">{currentWeather.temp}°</div>
+                  <div className="text-3xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
                   <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    H: {displayHigh}° L: {displayLow}°
+                    H: {convertTemperature(displayHigh, tempUnit)}{getTemperatureSymbol(tempUnit)} L: {convertTemperature(displayLow, tempUnit)}{getTemperatureSymbol(tempUnit)}
                   </div>
                 </>
               ) : (
                 <>
                   <div className="text-3xl font-bold">
-                    H: {displayHigh}° L: {displayLow}°
+                    H: {convertTemperature(displayHigh, tempUnit)}{getTemperatureSymbol(tempUnit)} L: {convertTemperature(displayLow, tempUnit)}{getTemperatureSymbol(tempUnit)}
                   </div>
                 </>
               )}
@@ -386,17 +397,6 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                         opacity="0.8"
                         strokeDasharray="2 2"
                       />
-                      {/* "Now" label */}
-                      <text
-                        x={(currentHour / hourRange) * 100}
-                        y="8"
-                        fill="white"
-                        fontSize="6"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                      >
-                        Now
-                      </text>
                     </>
                   )}
                 </svg>
@@ -418,7 +418,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                           transform: 'translate(-50%, -20px)',
                         }}
                       >
-                        {data.temp}°
+                        {convertTemperature(data.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}
                       </div>
                     )
                   })}
@@ -499,7 +499,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
 
                     const allPoints = hourlyData.map(data => ({
                       x: (data.hour / hourRange) * 100,
-                      y: 200 - ((data.precipitation / 100) * 200),
+                      y: 200 - ((data.precipitation / 110) * 200),
                       isPast: data.isPast
                     }))
 
@@ -529,7 +529,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                             d={generateSmoothPath(
                               pastData.map(data => ({
                                 x: (data.hour / hourRange) * 100,
-                                y: 200 - ((data.precipitation / 100) * 200)
+                                y: 200 - ((data.precipitation / 110) * 200)
                               })),
                               0.5
                             )}
@@ -547,7 +547,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                             d={generateSmoothPath(
                               futureData.map(data => ({
                                 x: (data.hour / hourRange) * 100,
-                                y: 200 - ((data.precipitation / 100) * 200)
+                                y: 200 - ((data.precipitation / 110) * 200)
                               })),
                               0.5
                             )}
@@ -566,7 +566,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     const data = hourlyData.find(d => d.hour === hour)
                     if (!data) return null
                     const x = (data.hour / hourRange) * 100
-                    const y = 200 - ((data.precipitation / 100) * 200)
+                    const y = 200 - ((data.precipitation / 110) * 200)
                     return (
                       <circle
                         key={hour}
@@ -594,17 +594,6 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                         opacity="0.8"
                         strokeDasharray="2 2"
                       />
-                      {/* "Now" label */}
-                      <text
-                        x={(currentHour / hourRange) * 100}
-                        y="8"
-                        fill="white"
-                        fontSize="6"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                      >
-                        Now
-                      </text>
                     </>
                   )}
                 </svg>
@@ -615,7 +604,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     const data = hourlyData.find(d => d.hour === hour)
                     if (!data) return null
                     const x = (data.hour / hourRange) * 100
-                    const y = 200 - ((data.precipitation / 100) * 200)
+                    const y = 200 - ((data.precipitation / 110) * 200)
                     return (
                       <div
                         key={hour}
@@ -682,7 +671,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
           <h3 className="text-lg font-semibold mb-2">Summary</h3>
           <p className="text-macos-text-secondary-light dark:text-macos-text-secondary leading-relaxed">
             Expect {displayCondition.toLowerCase()} conditions throughout the day.
-            Temperatures will range from {displayLow}°F in the morning to {displayHigh}°F
+            Temperatures will range from {convertTemperature(displayLow, tempUnit)}{getTemperatureSymbol(tempUnit)} in the morning to {convertTemperature(displayHigh, tempUnit)}{getTemperatureSymbol(tempUnit)}
             in the afternoon. Light winds from the northwest.
           </p>
         </div>

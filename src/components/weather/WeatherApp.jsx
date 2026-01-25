@@ -55,7 +55,23 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
     {
       label: 'Daily',
       active: forecastView === 'daily',
-      onClick: () => setForecastView('daily'),
+      onClick: () => {
+        // If no day is selected, select today
+        if (!selectedDay && forecastData.length > 0) {
+          const today = new Date()
+          const todayForecast = forecastData.find(day => {
+            const dayDate = new Date(day.date)
+            return dayDate.toDateString() === today.toDateString()
+          })
+          if (todayForecast) {
+            setSelectedDay(todayForecast)
+          } else {
+            // If today is not in the forecast, select the first day
+            setSelectedDay(forecastData[0])
+          }
+        }
+        setForecastView('daily')
+      },
     },
   ] : []
 

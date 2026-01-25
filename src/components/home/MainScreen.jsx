@@ -1,16 +1,24 @@
 import { useState, useEffect } from 'react'
 import Header from '../common/Header'
 import weatherService from '../../services/weather/weatherService'
+import { getTemperatureUnit } from '../../services/weather/config'
+import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
 
 function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
   const [currentWeather, setCurrentWeather] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [tempUnit, setTempUnit] = useState('F')
 
   // Fetch current weather on mount and when location changes
   useEffect(() => {
     async function fetchCurrentWeather() {
       try {
         setLoading(true)
+
+        // Load temperature unit preference
+        const unit = getTemperatureUnit()
+        setTempUnit(unit)
+
         const weather = await weatherService.getCurrentWeather()
         setCurrentWeather(weather)
       } catch (error) {
@@ -105,7 +113,7 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">Current Weather</p>
-                <p className="text-3xl font-bold">{currentWeather.temp}°F</p>
+                <p className="text-3xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</p>
                 <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">{currentWeather.condition}</p>
               </div>
               <div className="text-5xl">
