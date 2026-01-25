@@ -77,14 +77,14 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
 
 
         {/* App Icons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg w-full">
           {apps.map((app) => (
             <button
               key={app.id}
               onClick={() => onNavigate(app.id)}
               className="group relative touch-target"
             >
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br shadow-xl transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105 aspect-square flex flex-col items-center justify-center p-8 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br shadow-xl transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105 aspect-square flex flex-col items-center justify-center p-4 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
                 {/* Gradient Overlay */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${app.gradient} opacity-10 group-hover:opacity-20 transition-opacity`} />
 
