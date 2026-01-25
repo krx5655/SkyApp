@@ -9,12 +9,7 @@ function PlanetsView({ view, direction }) {
   if (view === 'solar') {
     return (
       <div className="p-6 space-y-6">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2">Solar System View</h2>
-          <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-            Top-down orbital diagram
-          </p>
-        </div>
+
 
         {/* Solar System Diagram Placeholder */}
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 to-black aspect-square max-w-2xl mx-auto border border-macos-border-light dark:border-macos-border">
@@ -54,12 +49,7 @@ function PlanetsView({ view, direction }) {
   // Earth View
   return (
     <div className="p-6 space-y-6">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Visible Planets</h2>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-          Looking {direction === 'N' ? 'North' : direction === 'E' ? 'East' : direction === 'S' ? 'South' : 'West'}
-        </p>
-      </div>
+
 
       {/* Sky Dome Visualization Placeholder */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-blue-900 via-purple-900 to-orange-900 aspect-video max-w-3xl mx-auto border border-macos-border-light dark:border-macos-border">
@@ -94,11 +84,10 @@ function PlanetsView({ view, direction }) {
         {mockPlanets.map((planet) => (
           <div
             key={planet.name}
-            className={`p-6 rounded-2xl border transition-all ${
-              planet.visible
-                ? 'bg-macos-card-light dark:bg-macos-card border-macos-border-light dark:border-macos-border'
-                : 'bg-macos-card-light/50 dark:bg-macos-card/50 border-macos-border-light/50 dark:border-macos-border/50 opacity-60'
-            }`}
+            className={`p-6 rounded-2xl border transition-all ${planet.visible
+              ? 'bg-macos-card-light dark:bg-macos-card border-macos-border-light dark:border-macos-border'
+              : 'bg-macos-card-light/50 dark:bg-macos-card/50 border-macos-border-light/50 dark:border-macos-border/50 opacity-60'
+              }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

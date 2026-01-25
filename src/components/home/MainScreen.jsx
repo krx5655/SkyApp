@@ -37,7 +37,7 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
       id: 'weather',
       name: 'Weather',
       icon: (
-        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -52,7 +52,7 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
       id: 'sky',
       name: 'Sky',
       icon: (
-        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

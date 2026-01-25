@@ -56,12 +56,7 @@ function SpaceWeatherView() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Space Weather</h2>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary">
-          Current Conditions
-        </p>
-      </div>
+
 
       {/* KP Index Gauge */}
       <div className="max-w-md mx-auto">
@@ -73,9 +68,8 @@ function SpaceWeatherView() {
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => (
               <div
                 key={level}
-                className={`w-8 h-2 rounded ${
-                  level <= kpIndex ? 'bg-white' : 'bg-white/30'
-                }`}
+                className={`w-8 h-2 rounded ${level <= kpIndex ? 'bg-white' : 'bg-white/30'
+                  }`}
               />
             ))}
           </div>
@@ -93,28 +87,26 @@ function SpaceWeatherView() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div
-                  className={`text-3xl font-bold ${
-                    scale.color === 'green'
+                  className={`text-3xl font-bold ${scale.color === 'green'
                       ? 'text-green-500'
                       : scale.color === 'yellow'
-                      ? 'text-yellow-500'
-                      : scale.color === 'orange'
-                      ? 'text-orange-500'
-                      : 'text-red-500'
-                  }`}
+                        ? 'text-yellow-500'
+                        : scale.color === 'orange'
+                          ? 'text-orange-500'
+                          : 'text-red-500'
+                    }`}
                 >
                   {scale.level}
                 </div>
                 <div
-                  className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                    scale.color === 'green'
+                  className={`px-3 py-1 rounded-lg text-xs font-medium ${scale.color === 'green'
                       ? 'bg-green-500/20 text-green-600 dark:text-green-400'
                       : scale.color === 'yellow'
-                      ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
-                      : scale.color === 'orange'
-                      ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400'
-                      : 'bg-red-500/20 text-red-600 dark:text-red-400'
-                  }`}
+                        ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+                        : scale.color === 'orange'
+                          ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400'
+                          : 'bg-red-500/20 text-red-600 dark:text-red-400'
+                    }`}
                 >
                   {scale.severity}
                 </div>
