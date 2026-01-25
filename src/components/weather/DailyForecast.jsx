@@ -292,9 +292,6 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
         <h2 className="text-3xl font-bold mb-2">
           {format(displayDate, 'EEEE, MMMM d')}
         </h2>
-        <p className="text-lg text-macos-text-secondary-light dark:text-macos-text-secondary">
-          {displayCondition || 'Loading...'}
-        </p>
       </div>
 
       {/* Loading/Error States */}
@@ -326,14 +323,14 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
             <div className="absolute top-6 left-6 z-10">
               {isToday && currentWeather ? (
                 <>
-                  <div className="text-3xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
+                  <div className="text-2xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
                   <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
                     H: {convertTemperature(displayHigh, tempUnit)}{getTemperatureSymbol(tempUnit)} L: {convertTemperature(displayLow, tempUnit)}{getTemperatureSymbol(tempUnit)}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="text-3xl font-bold">
+                  <div className="text-2xl font-bold">
                     H: {convertTemperature(displayHigh, tempUnit)}{getTemperatureSymbol(tempUnit)} L: {convertTemperature(displayLow, tempUnit)}{getTemperatureSymbol(tempUnit)}
                   </div>
                 </>
@@ -466,7 +463,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                           x2={(indicatorHour / hourRange) * 100}
                           y2="200"
                           stroke={isDarkMode ? "white" : "black"}
-                          strokeWidth="0.5"
+                          strokeWidth="0.25"
                           opacity="0.8"
                         />
                       </>
@@ -483,12 +480,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
                   const timeStr = hoveredData.hour === 0 ? '12:00 AM' :
                     hoveredData.hour === 12 ? '12:00 PM' :
-                    hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
-                    `${hoveredData.hour - 12}:00 PM`
+                      hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
+                        `${hoveredData.hour - 12}:00 PM`
 
                   // Calculate left position and clamp to prevent off-screen
                   const rawLeftPercent = (hoveredTempHour / hourRange) * 100
-                  const clampedLeftPercent = Math.max(8, Math.min(92, rawLeftPercent))
+                  const clampedLeftPercent = Math.max(6, Math.min(92, rawLeftPercent))
 
                   return (
                     <div
@@ -507,28 +504,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                   )
                 })()}
 
-                {/* Temperature labels - show at display hours where data exists */}
-                <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
-                  {displayHours.map((hour) => {
-                    const data = hourlyData.find(d => d.hour === hour)
-                    if (!data) return null
-                    const x = (data.hour / hourRange) * 100
-                    const y = 200 - ((data.temp - yAxisMin) / yAxisRange * 200)
-                    return (
-                      <div
-                        key={hour}
-                        className="absolute text-xs font-semibold"
-                        style={{
-                          left: `${x}%`,
-                          top: `${(y / 200) * 100}%`,
-                          transform: 'translate(-50%, -20px)',
-                        }}
-                      >
-                        {convertTemperature(data.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}
-                      </div>
-                    )
-                  })}
-                </div>
+
 
                 {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
                 <div className="absolute bottom-0 left-0 right-12 pointer-events-none">
@@ -691,7 +667,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                           x2={(indicatorHour / hourRange) * 100}
                           y2="200"
                           stroke={isDarkMode ? "white" : "black"}
-                          strokeWidth="0.5"
+                          strokeWidth="0.25"
                           opacity="0.8"
                         />
                       </>
@@ -708,12 +684,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
                   const timeStr = hoveredData.hour === 0 ? '12:00 AM' :
                     hoveredData.hour === 12 ? '12:00 PM' :
-                    hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
-                    `${hoveredData.hour - 12}:00 PM`
+                      hoveredData.hour < 12 ? `${hoveredData.hour}:00 AM` :
+                        `${hoveredData.hour - 12}:00 PM`
 
                   // Calculate left position and clamp to prevent off-screen
                   const rawLeftPercent = (hoveredPrecipHour / hourRange) * 100
-                  const clampedLeftPercent = Math.max(8, Math.min(92, rawLeftPercent))
+                  const clampedLeftPercent = Math.max(4, Math.min(92, rawLeftPercent))
 
                   return (
                     <div
@@ -729,28 +705,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                   )
                 })()}
 
-                {/* Precipitation labels - show at display hours where data exists */}
-                <div className="absolute top-8 left-0 right-12 bottom-8 pointer-events-none">
-                  {displayHours.map((hour) => {
-                    const data = hourlyData.find(d => d.hour === hour)
-                    if (!data) return null
-                    const x = (data.hour / hourRange) * 100
-                    const y = 200 - ((data.precipitation / 110) * 200)
-                    return (
-                      <div
-                        key={hour}
-                        className="absolute text-xs font-semibold"
-                        style={{
-                          left: `${x}%`,
-                          top: `${(y / 200) * 100}%`,
-                          transform: 'translate(-50%, -20px)',
-                        }}
-                      >
-                        {data.precipitation}%
-                      </div>
-                    )
-                  })}
-                </div>
+
 
                 {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
                 <div className="absolute bottom-0 left-0 right-12 pointer-events-none">
@@ -798,17 +753,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
         </div>
       )}
 
-      {/* Weather Summary */}
-      {displayCondition && displayHigh && displayLow && (
-        <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-          <h3 className="text-lg font-semibold mb-2">Summary</h3>
-          <p className="text-macos-text-secondary-light dark:text-macos-text-secondary leading-relaxed">
-            Expect {displayCondition.toLowerCase()} conditions throughout the day.
-            Temperatures will range from {convertTemperature(displayLow, tempUnit)}{getTemperatureSymbol(tempUnit)} in the morning to {convertTemperature(displayHigh, tempUnit)}{getTemperatureSymbol(tempUnit)}
-            in the afternoon. Light winds from the northwest.
-          </p>
-        </div>
-      )}
+
     </motion.div>
   )
 }
