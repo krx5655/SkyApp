@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import Header from '../common/Header'
-import Footer from '../common/Footer'
 import weatherService from '../../services/weather/weatherService'
 import { getTemperatureUnit } from '../../services/weather/config'
 import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
@@ -126,8 +125,6 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
           )}
         </div>
       </main>
-
-      <Footer buttons={[]} />
     </div>
   )
 }

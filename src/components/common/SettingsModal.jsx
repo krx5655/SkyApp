@@ -265,12 +265,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-4">
               {/* API Provider Selection */}
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Weather Provider</div>
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    Choose your weather data source
-                  </div>
-                </div>
+                <span className="font-medium">Weather Provider</span>
                 <select
                   value={selectedApi}
                   onChange={(e) => handleApiProviderChange(e.target.value)}
@@ -279,79 +274,59 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                   <option value="openweather" disabled={!hasOpenWeatherApiKey()}>
                     OpenWeatherMap {!hasOpenWeatherApiKey() && '(API key required)'}
                   </option>
-                  <option value="weathergov">Weather.gov (Free)</option>
+                  <option value="weathergov">Weather.gov</option>
                 </select>
               </div>
 
-              {/* Provider Info */}
-              <div className="p-3 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-                {selectedApi === 'openweather' ? (
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    <span className="font-medium text-macos-text-light dark:text-macos-text">OpenWeatherMap</span> - Full 24-hour graphs with historical data, worldwide coverage.
+              {/* OpenWeatherMap API Key - Only show when openweather is selected or being configured */}
+              {selectedApi === 'openweather' && (
+                <div className="pt-2 border-t border-macos-border-light dark:border-macos-border space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={apiKey}
+                      onChange={(e) => {
+                        setApiKey(e.target.value)
+                        setApiKeyStatus('')
+                      }}
+                      placeholder="Enter your API key"
+                      className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
+                    />
+                    <button
+                      onClick={saveApiKey}
+                      disabled={!apiKey.trim()}
+                      className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    >
+                      Save
+                    </button>
                   </div>
-                ) : (
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    <span className="font-medium text-macos-text-light dark:text-macos-text">Weather.gov</span> - Free US-only service. Shows current hour + future forecast only.
-                  </div>
-                )}
-              </div>
 
-              {/* OpenWeatherMap API Key */}
-              <div className="pt-2 border-t border-macos-border-light dark:border-macos-border">
-                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mb-3">
-                  <p className="mb-2">
-                    Get a free OpenWeatherMap API key at <a href="https://openweathermap.org/api" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">openweathermap.org/api</a>
-                  </p>
-                  <p className="text-xs">
-                    Requires One Call API 3.0 subscription (1,000 free calls/day).
-                  </p>
+                  {apiKeyStatus === 'success' && (
+                    <div className="text-sm text-green-600 dark:text-green-400">
+                      ✓ API key saved successfully!
+                    </div>
+                  )}
+                  {apiKeyStatus === 'saved' && (
+                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                      API key configured
+                    </div>
+                  )}
+                  {apiKeyStatus === 'error' && (
+                    <div className="text-sm text-red-600 dark:text-red-400">
+                      Failed to save API key
+                    </div>
+                  )}
+
+                  {apiKey && (
+                    <button
+                      onClick={removeApiKey}
+                      className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                    >
+                      Remove API key
+                    </button>
+                  )}
                 </div>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={apiKey}
-                    onChange={(e) => {
-                      setApiKey(e.target.value)
-                      setApiKeyStatus('')
-                    }}
-                    placeholder="Enter your OpenWeatherMap API key"
-                    className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
-                  />
-                  <button
-                    onClick={saveApiKey}
-                    disabled={!apiKey.trim()}
-                    className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                  >
-                    Save
-                  </button>
-                </div>
-
-                {apiKeyStatus === 'success' && (
-                  <div className="text-sm text-green-600 dark:text-green-400 mt-2">
-                    ✓ API key saved! You can now select OpenWeatherMap as your provider.
-                  </div>
-                )}
-                {apiKeyStatus === 'saved' && (
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mt-2">
-                    API key configured
-                  </div>
-                )}
-                {apiKeyStatus === 'error' && (
-                  <div className="text-sm text-red-600 dark:text-red-400 mt-2">
-                    Failed to save API key
-                  </div>
-                )}
-
-                {apiKey && (
-                  <button
-                    onClick={removeApiKey}
-                    className="text-sm text-red-600 dark:text-red-400 hover:underline mt-2"
-                  >
-                    Remove API key
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </section>
 
