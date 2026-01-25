@@ -75,12 +75,23 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
     },
   ] : []
 
+  // Determine header title based on current screen
+  let headerTitle = ''
+  if (currentScreen === 'forecast') {
+    headerTitle = forecastView === 'weekly' ? '7-Day Forecast' : 'Daily Forecast'
+  } else if (currentScreen === 'radar') {
+    headerTitle = 'Radar'
+  } else if (currentScreen === 'space') {
+    headerTitle = 'Space Weather'
+  }
+
   return (
     <div className="h-screen flex flex-col">
       <Header
         showBackButton
         onBack={onNavigateHome}
         onOpenSettings={onOpenSettings}
+        title={headerTitle}
       />
 
       <main className="flex-1 overflow-y-auto">

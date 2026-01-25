@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Header from '../common/Header'
+import Footer from '../common/Footer'
 import weatherService from '../../services/weather/weatherService'
 import { getTemperatureUnit } from '../../services/weather/config'
 import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
@@ -36,7 +37,7 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
       id: 'weather',
       name: 'Weather',
       icon: (
-        <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -51,7 +52,7 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
       id: 'sky',
       name: 'Sky',
       icon: (
-        <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -65,10 +66,10 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
   ]
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       <Header onOpenSettings={onOpenSettings} />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-8">
+      <main className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-8">
         {/* App Title */}
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
           Weather & Sky
@@ -127,6 +128,8 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
           )}
         </div>
       </main>
+
+      <Footer buttons={[]} />
     </div>
   )
 }
