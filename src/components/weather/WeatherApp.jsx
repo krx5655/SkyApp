@@ -98,6 +98,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
                 selectedDay={selectedDay}
                 forecastData={forecastData}
                 onNavigateDay={handleNavigateDay}
+                refreshTrigger={refreshTrigger}
               />
             )}
           </>

@@ -41,7 +41,7 @@ function generateSmoothPath(points, tension = 0.5) {
   return path
 }
 
-function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
+function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshTrigger }) {
   const [hourlyData, setHourlyData] = useState([])
   const [weatherDetails, setWeatherDetails] = useState(null)
   const [currentWeather, setCurrentWeather] = useState(null)
@@ -118,9 +118,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
     const x = event.clientX - rect.left
     const graphWidth = rect.width
 
-    // Calculate hour from X position (0-23 range)
-    const hour = Math.round((x / graphWidth) * 23)
-    const clampedHour = Math.max(0, Math.min(23, hour))
+    // Calculate fractional hour from X position (0-23 range) for smooth movement
+    const fractionalHour = (x / graphWidth) * 23
+    const clampedHour = Math.max(0, Math.min(23, fractionalHour))
 
     setHoveredTempHour(clampedHour)
   }
@@ -136,9 +136,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
     const x = event.clientX - rect.left
     const graphWidth = rect.width
 
-    // Calculate hour from X position (0-23 range)
-    const hour = Math.round((x / graphWidth) * 23)
-    const clampedHour = Math.max(0, Math.min(23, hour))
+    // Calculate fractional hour from X position (0-23 range) for smooth movement
+    const fractionalHour = (x / graphWidth) * 23
+    const clampedHour = Math.max(0, Math.min(23, fractionalHour))
 
     setHoveredPrecipHour(clampedHour)
   }
@@ -203,7 +203,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
     }
 
     fetchData()
-  }, [selectedDay])
+  }, [selectedDay, refreshTrigger])
 
   const displayDate = selectedDay?.date ? new Date(selectedDay.date) : new Date()
   const displayCondition = selectedDay?.condition || ''
@@ -456,7 +456,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
 
                 {/* Hover indicator header */}
                 {hoveredTempHour !== null && (() => {
-                  const hoveredData = hourlyData.find(d => d.hour === hoveredTempHour)
+                  // Round to nearest hour to find actual data
+                  const nearestHour = Math.round(hoveredTempHour)
+                  const hoveredData = hourlyData.find(d => d.hour === nearestHour)
                   if (!hoveredData) return null
 
                   const timeStr = hoveredData.hour === 0 ? '12:00 AM' :
@@ -468,7 +470,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     <div
                       className="absolute top-0 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border rounded-lg p-2 shadow-lg z-20 pointer-events-none"
                       style={{
-                        left: `${(hoveredData.hour / hourRange) * 100}%`,
+                        left: `${(hoveredTempHour / hourRange) * 100}%`,
                         transform: 'translateX(-50%)'
                       }}
                     >
@@ -505,11 +507,19 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                 </div>
 
                 {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
-                <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
+                <div className="absolute bottom-0 left-0 right-12 pointer-events-none">
                   {displayHours.map((hour) => {
                     const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
+                    const xPos = (hour / hourRange) * 100
                     return (
-                      <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
+                      <div
+                        key={hour}
+                        className="absolute text-xs text-macos-text-secondary-light dark:text-macos-text-secondary"
+                        style={{
+                          left: `${xPos}%`,
+                          transform: 'translateX(-50%)'
+                        }}
+                      >
                         {label}
                       </div>
                     )
@@ -670,7 +680,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
 
                 {/* Hover indicator header */}
                 {hoveredPrecipHour !== null && (() => {
-                  const hoveredData = hourlyData.find(d => d.hour === hoveredPrecipHour)
+                  // Round to nearest hour to find actual data
+                  const nearestHour = Math.round(hoveredPrecipHour)
+                  const hoveredData = hourlyData.find(d => d.hour === nearestHour)
                   if (!hoveredData) return null
 
                   const timeStr = hoveredData.hour === 0 ? '12:00 AM' :
@@ -682,7 +694,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                     <div
                       className="absolute top-0 bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border rounded-lg p-2 shadow-lg z-20 pointer-events-none"
                       style={{
-                        left: `${(hoveredData.hour / hourRange) * 100}%`,
+                        left: `${(hoveredPrecipHour / hourRange) * 100}%`,
                         transform: 'translateX(-50%)'
                       }}
                     >
@@ -716,11 +728,19 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay }) {
                 </div>
 
                 {/* Hour labels at bottom - always show 12AM, 6AM, 12PM, 6PM */}
-                <div className="absolute bottom-0 left-0 right-12 flex justify-between px-2">
+                <div className="absolute bottom-0 left-0 right-12 pointer-events-none">
                   {displayHours.map((hour) => {
                     const label = hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`
+                    const xPos = (hour / hourRange) * 100
                     return (
-                      <div key={hour} className="flex-1 text-center text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
+                      <div
+                        key={hour}
+                        className="absolute text-xs text-macos-text-secondary-light dark:text-macos-text-secondary"
+                        style={{
+                          left: `${xPos}%`,
+                          transform: 'translateX(-50%)'
+                        }}
+                      >
                         {label}
                       </div>
                     )
