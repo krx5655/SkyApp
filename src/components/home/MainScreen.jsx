@@ -74,9 +74,7 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
           Weather & Sky
         </h1>
-        <p className="text-macos-text-secondary-light dark:text-macos-text-secondary mb-12 text-center">
-          Your personal weather and astronomy companion
-        </p>
+
 
         {/* App Icons */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl w-full">
