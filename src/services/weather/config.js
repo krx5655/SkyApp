@@ -180,3 +180,36 @@ export function setWindSpeedUnit(unit) {
     return false
   }
 }
+
+/**
+ * Get radar provider preference from localStorage
+ * @returns {string} 'noaa' (default and only option for now)
+ */
+export function getRadarProvider() {
+  try {
+    const provider = localStorage.getItem('radar_provider')
+    // For now, only NOAA is supported
+    return provider === 'noaa' ? 'noaa' : 'noaa'
+  } catch (error) {
+    console.warn('Failed to get radar provider from localStorage:', error)
+    return 'noaa'
+  }
+}
+
+/**
+ * Set radar provider preference in localStorage
+ * @param {string} provider - 'noaa' (more providers can be added later)
+ * @returns {boolean} True if successful
+ */
+export function setRadarProvider(provider) {
+  try {
+    if (provider === 'noaa') {
+      localStorage.setItem('radar_provider', provider)
+      return true
+    }
+    return false
+  } catch (error) {
+    console.warn('Failed to set radar provider in localStorage:', error)
+    return false
+  }
+}
