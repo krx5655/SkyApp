@@ -45,18 +45,22 @@ class NoaaSpaceWeatherAdapter {
    */
   async getKpIndex() {
     try {
-      const data = await this.fetch('/json/planetary_k_index_1m.json')
+      const data = await this.fetch('/products/noaa-planetary-k-index.json')
 
       if (!data || data.length === 0) {
         console.warn('[NoaaAdapter] No KP index data received')
         return []
       }
 
-      // Returns array of [time_tag, kp_index, a_running, station_count]
-      return data.map(item => ({
-        time: this.parseUTCDate(item.time_tag),
-        kp: parseFloat(item.kp_index),
-        timestamp: item.time_tag
+      // Skip header row (first element is ["time_tag", "Kp", "a_running", "station_count"])
+      const dataRows = data.slice(1)
+
+      // Each row is an array: ["2026-02-02 18:00:00.000", "1.33", "5", "8"]
+      // [0] = time_tag, [1] = Kp, [2] = a_running, [3] = station_count
+      return dataRows.map(row => ({
+        time: this.parseUTCDate(row[0].replace(' ', 'T')), // Convert space to T for ISO format
+        kp: parseFloat(row[1]),
+        timestamp: row[0]
       }))
     } catch (error) {
       console.error('[NoaaAdapter] Failed to get KP index:', error)
