@@ -25,7 +25,11 @@ class SpaceWeatherService {
     const cached = getCache(cacheKey)
     if (cached) {
       console.log('[SpaceWeatherService] Using cached KP index')
-      return cached
+      // Rehydrate Date objects from cached strings
+      return cached.map(item => ({
+        ...item,
+        time: new Date(item.time)
+      }))
     }
 
     console.log('[SpaceWeatherService] Fetching KP index from API')
@@ -42,7 +46,11 @@ class SpaceWeatherService {
     const cached = getCache(cacheKey)
     if (cached) {
       console.log('[SpaceWeatherService] Using cached X-ray flux')
-      return cached
+      // Rehydrate Date objects from cached strings
+      return cached.map(item => ({
+        ...item,
+        time: new Date(item.time)
+      }))
     }
 
     console.log('[SpaceWeatherService] Fetching X-ray flux from API')
@@ -59,7 +67,13 @@ class SpaceWeatherService {
     const cached = getCache(cacheKey)
     if (cached) {
       console.log('[SpaceWeatherService] Using cached solar flares')
-      return cached
+      // Rehydrate Date objects from cached strings
+      return cached.map(item => ({
+        ...item,
+        beginTime: new Date(item.beginTime),
+        maxTime: new Date(item.maxTime),
+        endTime: item.endTime ? new Date(item.endTime) : null
+      }))
     }
 
     console.log('[SpaceWeatherService] Fetching solar flares from API')
@@ -76,7 +90,11 @@ class SpaceWeatherService {
     const cached = getCache(cacheKey)
     if (cached) {
       console.log('[SpaceWeatherService] Using cached alerts')
-      return cached
+      // Rehydrate Date objects from cached strings
+      return cached.map(item => ({
+        ...item,
+        issueTime: new Date(item.issueTime)
+      }))
     }
 
     console.log('[SpaceWeatherService] Fetching alerts from API')
@@ -93,7 +111,11 @@ class SpaceWeatherService {
     const cached = getCache(cacheKey)
     if (cached) {
       console.log('[SpaceWeatherService] Using cached sunspot number')
-      return cached
+      // Rehydrate Date objects from cached strings
+      return {
+        ...cached,
+        date: new Date(cached.date)
+      }
     }
 
     console.log('[SpaceWeatherService] Fetching sunspot number from API')
@@ -146,7 +168,11 @@ class SpaceWeatherService {
     const cached = getCache(cacheKey)
     if (cached) {
       console.log('[SpaceWeatherService] Using cached solar wind')
-      return cached
+      // Rehydrate Date objects from cached strings
+      return {
+        ...cached,
+        time: new Date(cached.time)
+      }
     }
 
     console.log('[SpaceWeatherService] Fetching solar wind from API')
@@ -163,7 +189,11 @@ class SpaceWeatherService {
     const cached = getCache(cacheKey)
     if (cached) {
       console.log('[SpaceWeatherService] Using cached proton flux')
-      return cached
+      // Rehydrate Date objects from cached strings
+      return {
+        ...cached,
+        time: new Date(cached.time)
+      }
     }
 
     console.log('[SpaceWeatherService] Fetching proton flux from API')

@@ -94,12 +94,15 @@ function KpIndexChart({ data }) {
   }
 
   console.log('[KpIndexChart] Received data points:', data.length)
+  console.log('[KpIndexChart] First data point time:', data[0]?.time, 'Type:', typeof data[0]?.time)
+  console.log('[KpIndexChart] Last data point time:', data[data.length - 1]?.time)
 
   // Get last 24 hours of data
   const now = new Date()
   const last24h = data.filter(d => (now - d.time) <= 24 * 60 * 60 * 1000)
 
   console.log('[KpIndexChart] Last 24h data points:', last24h.length)
+  console.log('[KpIndexChart] Now:', now, 'Cutoff:', new Date(now - 24 * 60 * 60 * 1000))
 
   // If no data in last 24h, show error
   if (last24h.length === 0) {
