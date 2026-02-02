@@ -93,9 +93,18 @@ function KpIndexChart({ data }) {
     return <LoadingCard title="KP Index (24 Hours)" />
   }
 
+  console.log('[KpIndexChart] Total data points:', data.length)
+  console.log('[KpIndexChart] First 3 items:', data.slice(0, 3))
+  console.log('[KpIndexChart] Sample KP values:', data.slice(0, 10).map(d => d.kp))
+
   // Get last 24 hours of data
   const now = new Date()
   const last24h = data.filter(d => (now - d.time) <= 24 * 60 * 60 * 1000)
+
+  console.log('[KpIndexChart] Last 24h data points:', last24h.length)
+  if (last24h.length > 0) {
+    console.log('[KpIndexChart] Last 24h KP values:', last24h.slice(0, 10).map(d => d.kp))
+  }
 
   // If no data in last 24h, show error
   if (last24h.length === 0) {
@@ -232,6 +241,10 @@ function AlertsSection({ alerts }) {
 
 // Solar Activity Stats
 function SolarActivityStats({ solarWind, xrayFlux, protonFlux, sunspotNumber }) {
+  console.log('[SolarActivityStats] Solar wind:', solarWind)
+  console.log('[SolarActivityStats] Proton flux:', protonFlux)
+  console.log('[SolarActivityStats] Sunspot:', sunspotNumber)
+
   const latestXray = xrayFlux && xrayFlux.length > 0 ? xrayFlux[xrayFlux.length - 1] : null
 
   // Convert flux to class
@@ -332,6 +345,8 @@ function XrayFluxChart({ data }) {
 
 // Solar Flares Section
 function SolarFlaresSection({ flares }) {
+  console.log('[SolarFlaresSection] Flares data:', flares)
+
   if (!flares || flares.length === 0) {
     return (
       <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
@@ -376,6 +391,8 @@ function SolarFlaresSection({ flares }) {
 
 // WSA-Enlil Animation Player
 function EnlilAnimationPlayer({ animation }) {
+  console.log('[EnlilAnimationPlayer] Animation data:', animation)
+
   const [currentFrame, setCurrentFrame] = useState(0)
   const [playing, setPlaying] = useState(false)
 
