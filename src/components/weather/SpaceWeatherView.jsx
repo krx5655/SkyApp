@@ -90,16 +90,33 @@ function SpaceWeatherView() {
 // KP Index Historical Bar Graph
 function KpIndexChart({ data }) {
   if (!data || data.length === 0) {
-    return <LoadingCard title="KP Index" />
+    return <LoadingCard title="KP Index (24 Hours)" />
   }
+
+  console.log('[KpIndexChart] Received data points:', data.length)
 
   // Get last 24 hours of data
   const now = new Date()
   const last24h = data.filter(d => (now - d.time) <= 24 * 60 * 60 * 1000)
 
-  // Sample every 3 hours to show 8 bars
+  console.log('[KpIndexChart] Last 24h data points:', last24h.length)
+
+  // If no data in last 24h, show error
+  if (last24h.length === 0) {
+    return (
+      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+        <h3 className="text-xl font-semibold mb-2">KP Index (24 Hours)</h3>
+        <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+          No recent KP index data available
+        </p>
+      </div>
+    )
+  }
+
+  // Sample data to show ~12 bars (every 2 hours for 24 hours)
   const sampledData = []
-  for (let i = 0; i < last24h.length; i += 18) { // ~3 hours at 10-min intervals
+  const step = Math.max(1, Math.floor(last24h.length / 12))
+  for (let i = 0; i < last24h.length; i += step) {
     sampledData.push(last24h[i])
   }
 

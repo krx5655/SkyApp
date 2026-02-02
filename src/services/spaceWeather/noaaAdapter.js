@@ -33,6 +33,13 @@ class NoaaSpaceWeatherAdapter {
   async getKpIndex() {
     try {
       const data = await this.fetch('/json/planetary_k_index_1m.json')
+      console.log('[NoaaAdapter] KP Index raw data sample:', data?.slice(0, 2))
+
+      if (!data || data.length === 0) {
+        console.warn('[NoaaAdapter] No KP index data received')
+        return []
+      }
+
       // Returns array of [time_tag, kp_index, a_running, station_count]
       return data.map(item => ({
         time: new Date(item.time_tag),
@@ -137,15 +144,28 @@ class NoaaSpaceWeatherAdapter {
   async getEnlilAnimation() {
     try {
       const data = await this.fetch('/products/animations/enlil.json')
-      if (data && data.length > 0) {
-        const latest = data[0]
-        return {
-          modelCompletionTime: latest.model_completion_time,
-          imageUrls: latest.images?.map(img => `${this.baseUrl}${img}`) || [],
-          timestamp: latest.model_completion_time
-        }
+      console.log('[NoaaAdapter] Enlil raw data:', data)
+
+      if (!data) {
+        console.warn('[NoaaAdapter] No Enlil data received')
+        return null
       }
-      return null
+
+      // Handle both array and single object responses
+      const enlilData = Array.isArray(data) ? data[0] : data
+
+      if (!enlilData) {
+        console.warn('[NoaaAdapter] Enlil data is empty')
+        return null
+      }
+
+      console.log('[NoaaAdapter] Enlil data structure:', enlilData)
+
+      return {
+        modelCompletionTime: enlilData.model_completion_time,
+        imageUrls: enlilData.images?.map(img => `${this.baseUrl}${img}`) || [],
+        timestamp: enlilData.model_completion_time
+      }
     } catch (error) {
       console.error('[NoaaAdapter] Failed to get Enlil animation:', error)
       // Return null instead of throwing - Enlil data may not always be available
@@ -158,23 +178,9 @@ class NoaaSpaceWeatherAdapter {
    * @returns {Promise<string>}
    */
   async getLascoC3Image() {
-    try {
-      // Try NOAA's LASCO endpoint first
-      const response = await fetch('https://soho.nascom.nasa.gov/data/realtime/c3/512/latest.jpg', {
-        method: 'HEAD'
-      })
-
-      if (response.ok) {
-        return `https://soho.nascom.nasa.gov/data/realtime/c3/512/latest.jpg?t=${Date.now()}`
-      }
-
-      // Fallback: construct URL with timestamp
-      return `https://soho.nascom.nasa.gov/data/realtime/c3/512/latest.jpg?t=${Date.now()}`
-    } catch (error) {
-      console.error('[NoaaAdapter] Failed to get LASCO C3 image:', error)
-      // Return URL anyway - the image component will handle the error
-      return `https://soho.nascom.nasa.gov/data/realtime/c3/512/latest.jpg?t=${Date.now()}`
-    }
+    // Just return the URL directly - CORS prevents HEAD requests
+    // The <img> tag will handle loading the image properly
+    return `https://soho.nascom.nasa.gov/data/realtime/c3/512/latest.jpg?t=${Date.now()}`
   }
 
   /**
