@@ -126,6 +126,7 @@ function KpIndexChart({ data }) {
   }
 
   const latestKp = data[data.length - 1]?.kp || 0
+  console.log('[KpIndexChart] Latest KP value:', latestKp, 'from item:', data[data.length - 1])
 
   const getKpColor = (kp) => {
     if (kp <= 2) return 'bg-green-500'
@@ -156,7 +157,7 @@ function KpIndexChart({ data }) {
 
       <div className="flex items-end justify-between gap-2 h-48">
         {sampledData.map((item, idx) => {
-          const height = (item.kp / 9) * 100
+          const height = Math.max(8, (item.kp / 9) * 100) // Minimum 8% height for visibility
           return (
             <div key={idx} className="flex-1 flex flex-col items-center gap-2">
               <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>

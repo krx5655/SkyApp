@@ -8,6 +8,19 @@ class NoaaSpaceWeatherAdapter {
   }
 
   /**
+   * Helper: Parse NOAA timestamp to UTC Date
+   * Some NOAA endpoints include Z suffix, some don't
+   * @param {string} timestamp - ISO timestamp string
+   * @returns {Date}
+   */
+  parseUTCDate(timestamp) {
+    if (!timestamp) return null
+    // If already has Z suffix, use as-is, otherwise add it
+    const utcTimestamp = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z'
+    return new Date(utcTimestamp)
+  }
+
+  /**
    * Fetch data from NOAA API with error handling
    * @param {string} endpoint - API endpoint
    * @returns {Promise<any>}
@@ -40,9 +53,8 @@ class NoaaSpaceWeatherAdapter {
       }
 
       // Returns array of [time_tag, kp_index, a_running, station_count]
-      // NOAA timestamps are in UTC but don't have Z suffix, so we need to append it
       return data.map(item => ({
-        time: new Date(item.time_tag + 'Z'), // Add Z to parse as UTC
+        time: this.parseUTCDate(item.time_tag),
         kp: parseFloat(item.kp_index),
         timestamp: item.time_tag
       }))
@@ -60,7 +72,7 @@ class NoaaSpaceWeatherAdapter {
     try {
       const data = await this.fetch('/json/goes/primary/xrays-6-hour.json')
       return data.map(item => ({
-        time: new Date(item.time_tag + 'Z'), // Add Z to parse as UTC
+        time: this.parseUTCDate(item.time_tag),
         flux: parseFloat(item.flux),
         timestamp: item.time_tag,
         satellite: item.satellite || 'unknown'
@@ -79,9 +91,9 @@ class NoaaSpaceWeatherAdapter {
     try {
       const data = await this.fetch('/json/goes/primary/xray-flares-latest.json')
       return data.map(item => ({
-        beginTime: new Date(item.begin_time + 'Z'), // Add Z to parse as UTC
-        maxTime: new Date(item.max_time + 'Z'),
-        endTime: item.end_time ? new Date(item.end_time + 'Z') : null,
+        beginTime: this.parseUTCDate(item.begin_time),
+        maxTime: this.parseUTCDate(item.max_time),
+        endTime: this.parseUTCDate(item.end_time),
         classType: item.class_type,
         sourceLocation: item.source_location || 'Unknown',
         activeRegion: item.active_region || null,
@@ -101,7 +113,7 @@ class NoaaSpaceWeatherAdapter {
     try {
       const data = await this.fetch('/products/alerts.json')
       return data.map(alert => ({
-        issueTime: new Date(alert.issue_datetime + 'Z'), // Add Z to parse as UTC
+        issueTime: this.parseUTCDate(alert.issue_datetime),
         message: alert.message,
         product: alert.product_id,
         serial: alert.serial_number,
@@ -123,10 +135,11 @@ class NoaaSpaceWeatherAdapter {
       // Get the most recent sunspot number
       if (data && data.length > 0) {
         const latest = data[data.length - 1]
+        console.log('[NoaaAdapter] Sunspot data structure:', latest)
         return {
           count: Math.round(parseFloat(latest.ssn)),
           smoothedCount: Math.round(parseFloat(latest.smoothed_ssn)),
-          date: new Date(latest.time_tag + 'Z'), // Add Z to parse as UTC
+          date: this.parseUTCDate(latest.time_tag),
           timestamp: latest.time_tag
         }
       }
@@ -144,6 +157,7 @@ class NoaaSpaceWeatherAdapter {
   async getEnlilAnimation() {
     try {
       const data = await this.fetch('/products/animations/enlil.json')
+      console.log('[NoaaAdapter] Enlil raw response:', data)
 
       if (!data) {
         return null
@@ -151,10 +165,13 @@ class NoaaSpaceWeatherAdapter {
 
       // Handle both array and single object responses
       const enlilData = Array.isArray(data) ? data[0] : data
+      console.log('[NoaaAdapter] Enlil data after array check:', enlilData)
 
       if (!enlilData) {
         return null
       }
+
+      console.log('[NoaaAdapter] Enlil field names:', Object.keys(enlilData))
 
       return {
         modelCompletionTime: enlilData.model_completion_time,
@@ -187,12 +204,13 @@ class NoaaSpaceWeatherAdapter {
       const data = await this.fetch('/json/rtsw/rtsw_mag_1m.json')
       if (data && data.length > 0) {
         const latest = data[data.length - 1]
+        console.log('[NoaaAdapter] Solar wind data structure:', latest)
         return {
           speed: parseFloat(latest.speed) || 0,
           density: parseFloat(latest.density) || 0,
           bz: parseFloat(latest.bz_gsm) || 0,
           bt: parseFloat(latest.bt) || 0,
-          time: new Date(latest.time_tag + 'Z'), // Add Z to parse as UTC
+          time: this.parseUTCDate(latest.time_tag),
           timestamp: latest.time_tag
         }
       }
@@ -215,7 +233,7 @@ class NoaaSpaceWeatherAdapter {
         return {
           flux: parseFloat(latest.flux) || 0,
           energy: latest.energy,
-          time: new Date(latest.time_tag + 'Z'), // Add Z to parse as UTC
+          time: this.parseUTCDate(latest.time_tag),
           timestamp: latest.time_tag
         }
       }
