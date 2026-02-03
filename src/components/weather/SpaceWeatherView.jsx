@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import spaceWeatherService from '../../services/spaceWeather/spaceWeatherService.js'
+import { clearAllCache } from '../../services/spaceWeather/cache.js'
 
 function SpaceWeatherView() {
   const [loading, setLoading] = useState(true)
@@ -37,6 +38,12 @@ function SpaceWeatherView() {
     }
   }
 
+  const handleClearCache = () => {
+    console.log('[SpaceWeatherView] Clearing cache and reloading data...')
+    clearAllCache()
+    loadData()
+  }
+
   if (loading && !data.kpIndex) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -57,6 +64,16 @@ function SpaceWeatherView() {
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
+
+      {/* Debug: Clear Cache Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleClearCache}
+          className="px-4 py-2 text-sm rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+        >
+          Clear Cache & Refresh Data
+        </button>
+      </div>
 
       {/* KP Index Bar Graph */}
       <KpIndexChart data={data.kpIndex} />
