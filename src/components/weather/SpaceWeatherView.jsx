@@ -173,15 +173,13 @@ function KpIndexChart({ data }) {
             const height = Math.max(8, (item.kp / 9) * 100) // Minimum 8% height for visibility
             console.log(`[KpIndexChart] Bar ${idx}: KP=${item.kp}, height=${height}%`)
             return (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
-                  <div
-                    className={`w-full rounded-t ${getKpColor(item.kp)} transition-all`}
-                    style={{ height: `${height}%` }}
-                    title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleTimeString()}`}
-                  />
-                </div>
-                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
+              <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-1">
+                <div
+                  className={`w-full rounded-t ${getKpColor(item.kp)} transition-all`}
+                  style={{ height: `${height}%`, maxHeight: '192px' }}
+                  title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleTimeString()}`}
+                />
+                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap">
                   {item.time.getHours()}:00
                 </div>
               </div>
