@@ -125,6 +125,9 @@ function KpIndexChart({ data }) {
     sampledData.push(last24h[i])
   }
 
+  console.log('[KpIndexChart] Sampled data for chart:', sampledData.length, 'items')
+  console.log('[KpIndexChart] Sampled KP values:', sampledData.map(d => d.kp))
+
   const latestKp = data[data.length - 1]?.kp || 0
   console.log('[KpIndexChart] Latest KP value:', latestKp, 'from item:', data[data.length - 1])
 
@@ -155,24 +158,36 @@ function KpIndexChart({ data }) {
         </div>
       </div>
 
-      <div className="flex items-end justify-between gap-2 h-48">
-        {sampledData.map((item, idx) => {
-          const height = Math.max(8, (item.kp / 9) * 100) // Minimum 8% height for visibility
-          return (
-            <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-              <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
-                <div
-                  className={`w-full rounded-t ${getKpColor(item.kp)} transition-all`}
-                  style={{ height: `${height}%` }}
-                  title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleTimeString()}`}
-                />
+      <div className="flex gap-2">
+        {/* Y-axis labels */}
+        <div className="flex flex-col justify-between h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pr-2">
+          <span>9</span>
+          <span>6</span>
+          <span>3</span>
+          <span>0</span>
+        </div>
+
+        {/* Bar chart */}
+        <div className="flex-1 flex items-end justify-between gap-2 h-48">
+          {sampledData.map((item, idx) => {
+            const height = Math.max(8, (item.kp / 9) * 100) // Minimum 8% height for visibility
+            console.log(`[KpIndexChart] Bar ${idx}: KP=${item.kp}, height=${height}%`)
+            return (
+              <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
+                  <div
+                    className={`w-full rounded-t ${getKpColor(item.kp)} transition-all`}
+                    style={{ height: `${height}%` }}
+                    title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleTimeString()}`}
+                  />
+                </div>
+                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  {item.time.getHours()}:00
+                </div>
               </div>
-              <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-                {item.time.getHours()}:00
-              </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
       <div className="mt-4 flex items-center justify-center gap-4 text-xs">
