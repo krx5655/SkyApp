@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { searchCities } from '../../services/geocoding/geocodingService'
 import weatherService from '../../services/weather/weatherService'
 import { clearAllCache } from '../../services/weather/cache'
-import { getOpenWeatherApiKey, setOpenWeatherApiKey, getSelectedAdapter, setSelectedAdapter, hasOpenWeatherApiKey, getTemperatureUnit, setTemperatureUnit, getWindSpeedUnit, setWindSpeedUnit } from '../../services/weather/config'
+import { getOpenWeatherApiKey, setOpenWeatherApiKey, getSelectedAdapter, setSelectedAdapter, hasOpenWeatherApiKey, getTemperatureUnit, setTemperatureUnit, getWindSpeedUnit, setWindSpeedUnit, getRadarProvider, setRadarProvider } from '../../services/weather/config'
+import radarService from '../../services/radar/radarService'
 
 function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [citySearch, setCitySearch] = useState('')
@@ -15,6 +16,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [selectedApi, setSelectedApi] = useState('openweather')
   const [temperatureUnit, setTemperatureUnitState] = useState('F')
   const [windSpeedUnit, setWindSpeedUnitState] = useState('mph')
+  const [radarProvider, setRadarProviderState] = useState('noaa')
 
   // Load current location, API key, and selected adapter
   useEffect(() => {
@@ -38,6 +40,10 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
 
     const windUnit = getWindSpeedUnit()
     setWindSpeedUnitState(windUnit)
+
+    // Load radar provider
+    const radar = getRadarProvider()
+    setRadarProviderState(radar)
   }, [])
 
   // Search cities
@@ -155,6 +161,14 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     if (onLocationChange) {
       onLocationChange()
     }
+  }
+
+  // Change radar provider
+  function handleRadarProviderChange(provider) {
+    setRadarProviderState(provider)
+    setRadarProvider(provider)
+    radarService.switchProvider(provider)
+    radarService.refresh()
   }
 
   return (
@@ -327,6 +341,28 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                   )}
                 </div>
               )}
+            </div>
+          </section>
+
+          {/* Radar Provider */}
+          <section>
+            <h3 className="text-lg font-semibold mb-4">Radar Provider</h3>
+            <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">Radar Data Source</div>
+                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                    Choose your radar provider
+                  </div>
+                </div>
+                <select
+                  value={radarProvider}
+                  onChange={(e) => handleRadarProviderChange(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                >
+                  <option value="noaa">NOAA (US Only)</option>
+                </select>
+              </div>
             </div>
           </section>
 
