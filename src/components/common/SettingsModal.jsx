@@ -128,12 +128,6 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
 
   // Change API provider
   function handleApiProviderChange(provider) {
-    if (provider === 'openweather' && !hasOpenWeatherApiKey()) {
-      // Can't switch to OpenWeatherMap without API key
-      alert('Please enter an OpenWeatherMap API key first')
-      return
-    }
-
     setSelectedApi(provider)
     setSelectedAdapter(provider)
     weatherService.switchAdapter(provider)
@@ -285,7 +279,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                   onChange={(e) => handleApiProviderChange(e.target.value)}
                   className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
                 >
-                  <option value="openweather" disabled={!hasOpenWeatherApiKey()}>
+                  <option value="openweather">
                     OpenWeatherMap {!hasOpenWeatherApiKey() && '(API key required)'}
                   </option>
                   <option value="weathergov">Weather.gov</option>
