@@ -202,23 +202,7 @@ function KpIndexChart({ data }) {
 
         {/* Chart area with gridlines and bars */}
         <div className="flex-1 relative h-48">
-          {/* Horizontal gridlines - 10 lines for KP 0-9 */}
-          <div className="absolute inset-0 flex flex-col pointer-events-none">
-            {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((value) => (
-              <div
-                key={value}
-                className="border-t border-gray-300 dark:border-gray-600"
-                style={{
-                  opacity: 0.3,
-                  flex: 1,
-                  borderTop: '1px solid',
-                  borderColor: 'currentColor'
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Bars */}
+          {/* Bars - in background */}
           <div className="absolute inset-0 flex items-end justify-between gap-1 pb-0">
             {sampledData.map((item, idx) => {
               const height = (item.kp / 9) * 100 // Scale from 0-9 KP
@@ -232,9 +216,16 @@ function KpIndexChart({ data }) {
                 : item.time.getHours() + ':00'
 
               return (
-                <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-1 h-full">
+                <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-1 h-full relative">
+                  {/* Vertical gridline at start of each day */}
+                  {idx % 8 === 0 && idx > 0 && (
+                    <div
+                      className="absolute left-0 top-0 bottom-0 border-l border-gray-300 dark:border-gray-600"
+                      style={{ opacity: 0.3, zIndex: 10 }}
+                    />
+                  )}
                   <div
-                    className="w-full rounded-t transition-all"
+                    className="w-full transition-all"
                     style={{
                       height: `${height}%`,
                       backgroundColor: barColor
@@ -249,6 +240,23 @@ function KpIndexChart({ data }) {
                 </div>
               )
             })}
+          </div>
+
+          {/* Horizontal gridlines - in foreground */}
+          <div className="absolute inset-0 flex flex-col" style={{ zIndex: 10 }}>
+            {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((value) => (
+              <div
+                key={value}
+                className="border-t border-gray-300 dark:border-gray-600"
+                style={{
+                  opacity: 0.3,
+                  flex: 1,
+                  borderTop: '1px solid',
+                  borderColor: 'currentColor',
+                  pointerEvents: 'none'
+                }}
+              />
+            ))}
           </div>
         </div>
 
