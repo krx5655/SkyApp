@@ -107,27 +107,27 @@ function SpaceWeatherView() {
 // KP Index Historical Bar Graph
 function KpIndexChart({ data }) {
   if (!data || data.length === 0) {
-    return <LoadingCard title="KP Index (24 Hours)" />
+    return <LoadingCard title="Geomagnetic Activity" />
   }
 
   console.log('[KpIndexChart] Total data points:', data.length)
   console.log('[KpIndexChart] First 3 items:', data.slice(0, 3))
   console.log('[KpIndexChart] Sample KP values:', data.slice(0, 10).map(d => d.kp))
 
-  // Get last 24 hours of data
+  // Get last 3 days (72 hours) of data
   const now = new Date()
-  const last24h = data.filter(d => (now - d.time) <= 24 * 60 * 60 * 1000)
+  const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
 
-  console.log('[KpIndexChart] Last 24h data points:', last24h.length)
-  if (last24h.length > 0) {
-    console.log('[KpIndexChart] Last 24h KP values:', last24h.slice(0, 10).map(d => d.kp))
+  console.log('[KpIndexChart] Last 72h data points:', last72h.length)
+  if (last72h.length > 0) {
+    console.log('[KpIndexChart] Last 72h KP values:', last72h.slice(0, 10).map(d => d.kp))
   }
 
-  // If no data in last 24h, show error
-  if (last24h.length === 0) {
+  // If no data in last 72h, show error
+  if (last72h.length === 0) {
     return (
-      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-        <h3 className="text-xl font-semibold mb-2">KP Index (24 Hours)</h3>
+      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
+        <h3 className="text-xl font-semibold mb-2">Geomagnetic Activity</h3>
         <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
           No recent KP index data available
         </p>
@@ -135,11 +135,11 @@ function KpIndexChart({ data }) {
     )
   }
 
-  // Sample data to show ~12 bars (every 2 hours for 24 hours)
+  // Sample data to show ~24 bars (8 per day for 3 days)
   const sampledData = []
-  const step = Math.max(1, Math.floor(last24h.length / 12))
-  for (let i = 0; i < last24h.length; i += step) {
-    sampledData.push(last24h[i])
+  const step = Math.max(1, Math.floor(last72h.length / 24))
+  for (let i = 0; i < last72h.length; i += step) {
+    sampledData.push(last72h[i])
   }
 
   console.log('[KpIndexChart] Sampled data for chart:', sampledData.length, 'items')
@@ -148,11 +148,14 @@ function KpIndexChart({ data }) {
   const latestKp = data[data.length - 1]?.kp || 0
   console.log('[KpIndexChart] Latest KP value:', latestKp, 'from item:', data[data.length - 1])
 
+  // Get G-scale color based on KP value (NOAA standard)
   const getKpColor = (kp) => {
-    if (kp <= 2) return 'bg-green-500'
-    if (kp <= 4) return 'bg-yellow-500'
-    if (kp <= 6) return 'bg-orange-500'
-    return 'bg-red-500'
+    if (kp >= 9) return '#c00000'  // G5: Dark red
+    if (kp >= 8) return '#ff0000'  // G4: Red
+    if (kp >= 7) return '#ed7d31'  // G3: Dark orange
+    if (kp >= 6) return '#ffc000'  // G2: Light orange
+    if (kp >= 5) return '#ffff00'  // G1: Yellow
+    return '#92d050'               // G0: Light green
   }
 
   const getKpLabel = (kp) => {
@@ -164,7 +167,7 @@ function KpIndexChart({ data }) {
   }
 
   return (
-    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold">Geomagnetic Activity</h3>
         <div className="text-right">
@@ -183,73 +186,97 @@ function KpIndexChart({ data }) {
           </span>
         </div>
 
-        {/* Y-axis labels (1-9) */}
-        <div className="flex flex-col justify-between h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pr-2">
-          <span>9</span>
-          <span>8</span>
-          <span>7</span>
-          <span>6</span>
-          <span>5</span>
-          <span>4</span>
-          <span>3</span>
-          <span>2</span>
-          <span>1</span>
+        {/* Y-axis labels (1-9, with space for 0 at bottom) */}
+        <div className="flex flex-col h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pr-2" style={{ justifyContent: 'space-between', paddingBottom: '0' }}>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>9</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>8</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>7</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>6</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>5</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>4</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>3</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>2</span>
+          <span style={{ height: '10%', display: 'flex', alignItems: 'center' }}>1</span>
+          <div style={{ height: '10%' }}></div>
         </div>
 
         {/* Chart area with gridlines and bars */}
         <div className="flex-1 relative h-48">
-          {/* Horizontal gridlines */}
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-            {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((value) => (
-              <div key={value} className="border-t border-gray-300 dark:border-gray-600" style={{ opacity: 0.3 }} />
+          {/* Horizontal gridlines - 10 lines for KP 0-9 */}
+          <div className="absolute inset-0 flex flex-col pointer-events-none">
+            {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((value) => (
+              <div
+                key={value}
+                className="border-t border-gray-300 dark:border-gray-600"
+                style={{
+                  opacity: 0.3,
+                  flex: 1,
+                  borderTop: '1px solid',
+                  borderColor: 'currentColor'
+                }}
+              />
             ))}
           </div>
 
           {/* Bars */}
-          <div className="absolute inset-0 flex items-end justify-between gap-2 pb-0">
+          <div className="absolute inset-0 flex items-end justify-between gap-1 pb-0">
             {sampledData.map((item, idx) => {
-              const height = Math.max(8, (item.kp / 9) * 100) // Minimum 8% height for visibility
+              const height = (item.kp / 9) * 100 // Scale from 0-9 KP
+              const barColor = getKpColor(item.kp)
               console.log(`[KpIndexChart] Bar ${idx}: KP=${item.kp}, height=${height}%`)
+
+              // Format date label - show date every ~8 bars (once per day)
+              const showDate = idx % 8 === 0 || idx === sampledData.length - 1
+              const dateLabel = showDate
+                ? item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                : item.time.getHours() + ':00'
+
               return (
                 <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-1 h-full">
                   <div
-                    className={`w-full rounded-t ${getKpColor(item.kp)} transition-all`}
-                    style={{ height: `${height}%` }}
-                    title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleTimeString()}`}
+                    className="w-full rounded-t transition-all"
+                    style={{
+                      height: `${height}%`,
+                      backgroundColor: barColor
+                    }}
+                    title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleString()}`}
                   />
-                  <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap -mb-5">
-                    {item.time.getHours()}:00
-                  </div>
+                  {showDate && (
+                    <div className="text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap -mb-5">
+                      {dateLabel}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         </div>
 
-        {/* G-scale (geomagnetic storm scale) - proportional sizing */}
+        {/* G-scale (geomagnetic storm scale) - aligned with gridlines */}
         <div className="flex flex-col h-48 w-12 ml-2">
-          {/* G5: KP 9 - Extreme storm (1/9 of height) */}
-          <div className="flex-[1] flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#c00000' }}>
+          {/* Each section is 10% height to align with gridlines (KP 0-9) */}
+          {/* G5: KP 9 - Extreme storm */}
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#c00000', height: '11.11%' }}>
             G5
           </div>
-          {/* G4: KP 8 - Severe storm (1/9 of height) */}
-          <div className="flex-[1] flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ff0000' }}>
+          {/* G4: KP 8 - Severe storm */}
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ff0000', height: '11.11%' }}>
             G4
           </div>
-          {/* G3: KP 7 - Strong storm (1/9 of height) */}
-          <div className="flex-[1] flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ed7d31' }}>
+          {/* G3: KP 7 - Strong storm */}
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ed7d31', height: '11.11%' }}>
             G3
           </div>
-          {/* G2: KP 6 - Moderate storm (1/9 of height) */}
-          <div className="flex-[1] flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffc000' }}>
+          {/* G2: KP 6 - Moderate storm */}
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffc000', height: '11.11%' }}>
             G2
           </div>
-          {/* G1: KP 5 - Minor storm (1/9 of height) */}
-          <div className="flex-[1] flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffff00' }}>
+          {/* G1: KP 5 - Minor storm */}
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffff00', height: '11.11%' }}>
             G1
           </div>
-          {/* G0: KP 0-4 - No storm (4/9 of height) */}
-          <div className="flex-[4] flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050' }}>
+          {/* G0: KP 0-4 - No storm */}
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050', height: '55.56%' }}>
             G0
           </div>
         </div>
