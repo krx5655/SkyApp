@@ -83,7 +83,7 @@ class NoaaSpaceWeatherAdapter {
    */
   async getXrayFlux() {
     try {
-      const data = await this.fetch('/json/goes/primary/xrays-6-hour.json')
+      const data = await this.fetch('/json/goes/primary/xrays-3-day.json')
       return data.map(item => ({
         time: this.parseUTCDate(item.time_tag),
         flux: parseFloat(item.flux),

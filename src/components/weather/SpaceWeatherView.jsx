@@ -39,7 +39,6 @@ function SpaceWeatherView() {
   }
 
   const handleClearCache = () => {
-    console.log('[SpaceWeatherView] Clearing cache and reloading data...')
     clearAllCache()
     loadData()
   }
@@ -75,11 +74,11 @@ function SpaceWeatherView() {
         </button>
       </div>
 
-      {/* KP Index Bar Graph */}
-      <KpIndexChart data={data.kpIndex} />
-
-      {/* Active Alerts */}
-      <AlertsSection alerts={data.alerts} />
+      {/* Charts Row: KP Index + Solar X-ray Flux side by side */}
+      <div className="flex gap-4 flex-wrap">
+        <KpIndexChart data={data.kpIndex} />
+        <SolarXrayFluxChart data={data.xrayFlux} />
+      </div>
 
       {/* Solar Activity Stats Grid */}
       <SolarActivityStats
@@ -88,9 +87,6 @@ function SpaceWeatherView() {
         protonFlux={data.protonFlux}
         sunspotNumber={data.sunspotNumber}
       />
-
-      {/* X-ray Flux Chart */}
-      <XrayFluxChart data={data.xrayFlux} />
 
       {/* Recent Solar Flares */}
       <SolarFlaresSection flares={data.solarFlares} />
@@ -107,27 +103,18 @@ function SpaceWeatherView() {
 // KP Index Historical Bar Graph
 function KpIndexChart({ data }) {
   if (!data || data.length === 0) {
-    return <LoadingCard title="KP Index (24 Hours)" />
+    return <LoadingCard title="Geomagnetic Activity" />
   }
 
-  console.log('[KpIndexChart] Total data points:', data.length)
-  console.log('[KpIndexChart] First 3 items:', data.slice(0, 3))
-  console.log('[KpIndexChart] Sample KP values:', data.slice(0, 10).map(d => d.kp))
-
-  // Get last 24 hours of data
+  // Get last 3 days (72 hours) of data
   const now = new Date()
-  const last24h = data.filter(d => (now - d.time) <= 24 * 60 * 60 * 1000)
+  const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
 
-  console.log('[KpIndexChart] Last 24h data points:', last24h.length)
-  if (last24h.length > 0) {
-    console.log('[KpIndexChart] Last 24h KP values:', last24h.slice(0, 10).map(d => d.kp))
-  }
-
-  // If no data in last 24h, show error
-  if (last24h.length === 0) {
+  // If no data in last 72h, show error
+  if (last72h.length === 0) {
     return (
-      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-        <h3 className="text-xl font-semibold mb-2">KP Index (24 Hours)</h3>
+      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
+        <h3 className="text-xl font-semibold mb-2">Geomagnetic Activity</h3>
         <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
           No recent KP index data available
         </p>
@@ -135,24 +122,23 @@ function KpIndexChart({ data }) {
     )
   }
 
-  // Sample data to show ~12 bars (every 2 hours for 24 hours)
+  // Sample data to show ~24 bars (8 per day for 3 days)
   const sampledData = []
-  const step = Math.max(1, Math.floor(last24h.length / 12))
-  for (let i = 0; i < last24h.length; i += step) {
-    sampledData.push(last24h[i])
+  const step = Math.max(1, Math.floor(last72h.length / 24))
+  for (let i = 0; i < last72h.length; i += step) {
+    sampledData.push(last72h[i])
   }
 
-  console.log('[KpIndexChart] Sampled data for chart:', sampledData.length, 'items')
-  console.log('[KpIndexChart] Sampled KP values:', sampledData.map(d => d.kp))
-
   const latestKp = data[data.length - 1]?.kp || 0
-  console.log('[KpIndexChart] Latest KP value:', latestKp, 'from item:', data[data.length - 1])
 
+  // Get G-scale color based on KP value (NOAA standard)
   const getKpColor = (kp) => {
-    if (kp <= 2) return 'bg-green-500'
-    if (kp <= 4) return 'bg-yellow-500'
-    if (kp <= 6) return 'bg-orange-500'
-    return 'bg-red-500'
+    if (kp >= 9) return '#c00000'  // G5: Dark red
+    if (kp >= 8) return '#ff0000'  // G4: Red
+    if (kp >= 7) return '#ed7d31'  // G3: Dark orange
+    if (kp >= 6) return '#ffc000'  // G2: Light orange
+    if (kp >= 5) return '#ffff00'  // G1: Yellow
+    return '#92d050'               // G0: Light green
   }
 
   const getKpLabel = (kp) => {
@@ -164,9 +150,9 @@ function KpIndexChart({ data }) {
   }
 
   return (
-    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
+    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold">KP Index (24 Hours)</h3>
+        <h3 className="text-xl font-semibold">Geomagnetic Activity</h3>
         <div className="text-right">
           <div className="text-3xl font-bold">{latestKp.toFixed(1)}</div>
           <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
@@ -175,107 +161,101 @@ function KpIndexChart({ data }) {
         </div>
       </div>
 
-      <div className="flex gap-2">
-        {/* Y-axis labels */}
-        <div className="flex flex-col justify-between h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pr-2">
-          <span>9</span>
-          <span>6</span>
-          <span>3</span>
-          <span>0</span>
+      <div className="flex gap-2 items-start">
+        {/* Vertical "Kp Index" label */}
+        <div className="flex items-center justify-center h-48" style={{ width: '20px' }}>
+          <span className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap transform -rotate-90">
+            Kp Index
+          </span>
         </div>
 
-        {/* Bar chart */}
-        <div className="flex-1 flex items-end justify-between gap-2 h-48">
-          {sampledData.map((item, idx) => {
-            const height = Math.max(8, (item.kp / 9) * 100) // Minimum 8% height for visibility
-            console.log(`[KpIndexChart] Bar ${idx}: KP=${item.kp}, height=${height}%`)
-            return (
-              <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-1">
-                <div
-                  className={`w-full rounded-t ${getKpColor(item.kp)} transition-all`}
-                  style={{ height: `${height}%`, maxHeight: '192px' }}
-                  title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleTimeString()}`}
-                />
-                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap">
-                  {item.time.getHours()}:00
-                </div>
-              </div>
-            )
-          })}
+        {/* Y-axis labels (1-9) — absolutely positioned to align with gridlines */}
+        <div className="relative h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pr-2" style={{ width: '14px' }}>
+          {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((val, idx) => (
+            <span
+              key={val}
+              className="absolute"
+              style={{ top: `${idx * 10}%`, transform: 'translateY(60%)' }}
+            >
+              {val}
+            </span>
+          ))}
         </div>
-      </div>
 
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-green-500"></div>
-          <span className="text-macos-text-secondary-light dark:text-macos-text-secondary">Quiet (0-2)</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-yellow-500"></div>
-          <span className="text-macos-text-secondary-light dark:text-macos-text-secondary">Unsettled (3-4)</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-orange-500"></div>
-          <span className="text-macos-text-secondary-light dark:text-macos-text-secondary">Active (5-6)</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-red-500"></div>
-          <span className="text-macos-text-secondary-light dark:text-macos-text-secondary">Storm (7-9)</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Active Alerts Section
-function AlertsSection({ alerts }) {
-  if (!alerts || alerts.length === 0) {
-    return (
-      <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/30">
-        <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-          <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Active Alerts
-        </h3>
-        <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-          No active space weather alerts
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-3">
-      <h3 className="text-xl font-semibold">Active Alerts</h3>
-      {alerts.slice(0, 5).map((alert, idx) => (
-        <div
-          key={idx}
-          className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="font-semibold text-yellow-600 dark:text-yellow-400 mb-1">
-                {alert.product}
-              </div>
-              <p className="text-sm whitespace-pre-wrap">{alert.message}</p>
+        {/* Chart area + date labels below */}
+        <div className="flex-1 relative">
+          {/* Chart - fixed height */}
+          <div className="relative h-48">
+            {/* Bars - in background */}
+            <div className="absolute inset-0 flex items-end justify-between gap-1">
+              {sampledData.map((item, idx) => {
+                const height = (item.kp / 9) * 100
+                const barColor = getKpColor(item.kp)
+                return (
+                  <div key={idx} className="flex-1 h-full flex flex-col justify-end relative">
+                    {/* Vertical gridline at start of each day */}
+                    {idx % 8 === 0 && idx > 0 && (
+                      <div
+                        className="absolute left-0 top-0 bottom-0 border-l border-gray-300 dark:border-gray-600"
+                        style={{ opacity: 0.3, zIndex: 10 }}
+                      />
+                    )}
+                    <div
+                      className="w-full transition-all"
+                      style={{ height: `${height}%`, backgroundColor: barColor }}
+                      title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleString()}`}
+                    />
+                  </div>
+                )
+              })}
             </div>
-            <div className="text-right text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap">
-              {alert.issueTime.toLocaleString()}
+
+            {/* Horizontal gridlines — foreground, using Tailwind class only for consistent color */}
+            <div className="absolute inset-0 flex flex-col" style={{ zIndex: 10, pointerEvents: 'none' }}>
+              {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((value) => (
+                <div
+                  key={value}
+                  className="border-t border-gray-300 dark:border-gray-600"
+                  style={{ opacity: 0.3, flex: 1 }}
+                />
+              ))}
             </div>
           </div>
+
+          {/* Date labels — in own row so they never affect bar widths */}
+          <div className="relative h-5 mt-1">
+            {sampledData.map((item, idx) => {
+              if (idx % 8 !== 0 && idx !== sampledData.length - 1) return null
+              const xPct = (idx / Math.max(sampledData.length - 1, 1)) * 100
+              return (
+                <div
+                  key={idx}
+                  className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap"
+                  style={{ left: `${xPct}%`, transform: 'translateX(-50%)' }}
+                >
+                  {item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </div>
+              )
+            })}
+          </div>
         </div>
-      ))}
+
+        {/* G-scale (geomagnetic storm scale) - aligned with gridlines */}
+        <div className="flex flex-col h-48 w-12 ml-2">
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#c00000', height: '11.11%' }}>G5</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ff0000', height: '11.11%' }}>G4</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ed7d31', height: '11.11%' }}>G3</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffc000', height: '11.11%' }}>G2</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffff00', height: '11.11%' }}>G1</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050', height: '55.56%' }}>G0</div>
+        </div>
+      </div>
     </div>
   )
 }
 
 // Solar Activity Stats
 function SolarActivityStats({ solarWind, xrayFlux, protonFlux, sunspotNumber }) {
-  console.log('[SolarActivityStats] Solar wind:', solarWind)
-  console.log('[SolarActivityStats] Proton flux:', protonFlux)
-  console.log('[SolarActivityStats] Sunspot:', sunspotNumber)
-
   const latestXray = xrayFlux && xrayFlux.length > 0 ? xrayFlux[xrayFlux.length - 1] : null
 
   // Convert flux to class
@@ -329,46 +309,209 @@ function StatCard({ title, value, unit }) {
   )
 }
 
-// X-ray Flux Chart
-function XrayFluxChart({ data }) {
+// Solar X-ray Flux Chart (NOAA-style, replaces old XrayFluxChart)
+function SolarXrayFluxChart({ data }) {
+  const MIN_LOG = -9  // 10^-9 W/m² (below A class)
+  const MAX_LOG = -2  // 10^-2 W/m² (above X20)
+  const LOG_RANGE = MAX_LOG - MIN_LOG // 7 decades
+
+  // Helper: log-scale y position (0% = top = highest flux, 100% = bottom = lowest)
+  const fluxToY = (flux) => {
+    const logFlux = Math.log10(Math.max(flux, Math.pow(10, MIN_LOG)))
+    return Math.max(0, Math.min(100, ((MAX_LOG - logFlux) / LOG_RANGE) * 100))
+  }
+
+  // Flare class label from flux
+  const getFluxClass = (flux) => {
+    if (!flux || flux <= 0) return '--'
+    const log = Math.log10(flux)
+    if (log < -8) return `A${(flux * 1e8).toFixed(1)}`
+    if (log < -7) return `B${(flux * 1e7).toFixed(1)}`
+    if (log < -6) return `C${(flux * 1e6).toFixed(1)}`
+    if (log < -5) return `M${(flux * 1e5).toFixed(1)}`
+    return `X${(flux * 1e4).toFixed(1)}`
+  }
+
+  const getFluxLabel = (flux) => {
+    if (!flux || flux <= 0) return 'No data'
+    const log = Math.log10(flux)
+    if (log < -7) return 'Normal'
+    if (log < -6) return 'Moderate'
+    if (log < -5) return 'Active'
+    if (log < -4) return 'M-class flare'
+    return 'X-class flare'
+  }
+
   if (!data || data.length === 0) {
-    return <LoadingCard title="X-Ray Flux (6 Hours)" />
+    return <LoadingCard title="Solar X-ray Flux" />
   }
 
-  // Sample data to show ~50 points
+  // Filter to last 72 hours
+  const now = new Date()
+  const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
+
+  if (last72h.length === 0) {
+    return (
+      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
+        <h3 className="text-xl font-semibold mb-2">Solar X-ray Flux</h3>
+        <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+          No recent X-ray flux data available
+        </p>
+      </div>
+    )
+  }
+
+  // Sample to ~300 points for smooth SVG rendering
   const sampledData = []
-  const step = Math.max(1, Math.floor(data.length / 50))
-  for (let i = 0; i < data.length; i += step) {
-    sampledData.push(data[i])
+  const step = Math.max(1, Math.floor(last72h.length / 300))
+  for (let i = 0; i < last72h.length; i += step) {
+    sampledData.push(last72h[i])
   }
 
-  const maxFlux = Math.max(...sampledData.map(d => d.flux))
-  const minFlux = Math.min(...sampledData.map(d => d.flux))
+  // Build SVG points
+  const svgPoints = sampledData.map((item, idx) => ({
+    x: (idx / Math.max(sampledData.length - 1, 1)) * 100,
+    y: fluxToY(item.flux),
+    time: item.time
+  }))
+
+  // SVG path strings
+  const linePath = svgPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
+  const fillPath = linePath +
+    ` L ${svgPoints[svgPoints.length - 1].x},100 L ${svgPoints[0].x},100 Z`
+
+  // Find day boundaries for date labels and vertical lines
+  const dayBoundaries = []
+  let currentDay = null
+  sampledData.forEach((item, idx) => {
+    const dayStr = item.time.toDateString()
+    if (dayStr !== currentDay) {
+      currentDay = dayStr
+      dayBoundaries.push({
+        idx,
+        xPct: (idx / Math.max(sampledData.length - 1, 1)) * 100,
+        label: item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      })
+    }
+  })
+
+  const latestFlux = last72h[last72h.length - 1]?.flux || 0
+
+  // Gradient color stops (y% from top = high flux to bottom = low flux)
+  // R5/R4 boundary (X20 = 10^-2.699):  y = 9.99%
+  // R4/R3 boundary (X10 = 10^-3):      y = 14.29%
+  // R3/R2 boundary (X1  = 10^-4):      y = 28.57%
+  // R2/R1 boundary (M5  = 10^-4.301):  y = 32.87%
+  // R1/R0 boundary (M1  = 10^-5):      y = 42.86%
+
+  // R-scale box heights (proportional to log-scale ranges)
+  // R5: 9.99% | R4: 4.30% | R3: 14.28% | R2: 4.30% | R1: 9.99% | R0: 57.14%
 
   return (
-    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-      <h3 className="text-xl font-semibold mb-4">X-Ray Flux (6 Hours)</h3>
-
-      <div className="relative h-48">
-        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-          <polyline
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.5"
-            className="text-blue-500"
-            points={sampledData.map((d, i) => {
-              const x = (i / (sampledData.length - 1)) * 100
-              const y = 100 - ((Math.log10(d.flux) - Math.log10(minFlux)) / (Math.log10(maxFlux) - Math.log10(minFlux))) * 100
-              return `${x},${y}`
-            }).join(' ')}
-          />
-        </svg>
+    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-semibold">Solar X-ray Flux</h3>
+        <div className="text-right">
+          <div className="text-3xl font-bold">{getFluxClass(latestFlux)}</div>
+          <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+            {getFluxLabel(latestFlux)}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-2 flex justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-        <span>{sampledData[0]?.time.toLocaleTimeString()}</span>
-        <span>6-Hour History</span>
-        <span>{sampledData[sampledData.length - 1]?.time.toLocaleTimeString()}</span>
+      <div className="flex gap-2 items-center">
+        {/* Vertical "Flare Class" label */}
+        <div className="flex items-center justify-center h-48" style={{ width: '20px' }}>
+          <span className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap transform -rotate-90">
+            Flare Class
+          </span>
+        </div>
+
+        {/* Y-axis labels: X, M, C, B, A —*/}
+        <div className="relative h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary" style={{ width: '12px' }}>
+          {[
+            { label: 'X', yPct: 15 },
+            { label: 'M', yPct: 35 },
+            { label: 'C', yPct: 50 },
+            { label: 'B', yPct: 70 },
+            { label: 'A', yPct: 90 },
+          ].map(({ label, yPct }) => (
+            <span
+              key={label}
+              className="absolute"
+              style={{ top: `${yPct}%`, transform: 'translateY(-50%)' }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Chart area */}
+        <div className="flex-1 relative h-48">
+          {/* SVG: filled area + line */}
+          <svg
+            className="absolute inset-0 w-full h-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="xrayFillGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#c00000" />
+                <stop offset="9.99%" stopColor="#ff0000" />
+                <stop offset="14.29%" stopColor="#ed7d31" />
+                <stop offset="28.57%" stopColor="#ffc000" />
+                <stop offset="32.87%" stopColor="#ffff00" />
+                <stop offset="42.86%" stopColor="#92d050" />
+                <stop offset="100%" stopColor="#92d050" />
+              </linearGradient>
+            </defs>
+            {/* Filled area */}
+            <path d={fillPath} fill="url(#xrayFillGradient)" opacity="0.85" />
+            {/* Line on top */}
+            <path d={linePath} fill="none" stroke="#1a1a1a" strokeWidth="0.3" />
+          </svg>
+
+          {/* Gridlines — foreground */}
+          <div className="absolute inset-0" style={{ zIndex: 10, pointerEvents: 'none' }}>
+            {/* Horizontal gridlines at each log decade */}
+            {[-8, -7, -6, -5, -4, -3].map((logVal) => (
+              <div
+                key={logVal}
+                className="absolute left-0 right-0 border-t border-gray-300 dark:border-gray-600"
+                style={{ top: `${((MAX_LOG - logVal) / LOG_RANGE) * 100}%`, opacity: 0.3 }}
+              />
+            ))}
+            {/* Vertical day separators */}
+            {dayBoundaries.slice(1).map(({ xPct, label }) => (
+              <div
+                key={label}
+                className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600"
+                style={{ left: `${xPct}%`, opacity: 0.3 }}
+              />
+            ))}
+          </div>
+
+          {/* X-axis date labels */}
+          {dayBoundaries.map(({ xPct, label }) => (
+            <div
+              key={label}
+              className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap"
+              style={{ left: `${xPct}%`, bottom: '-20px', transform: 'translateX(-50%)' }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* R-scale — aligned with log-scale gridlines */}
+        <div className="flex flex-col h-48 w-12 ml-2">
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#c00000', height: '9.99%' }}>R5</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ff0000', height: '4.30%' }}>R4</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ed7d31', height: '14.28%' }}>R3</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffc000', height: '4.30%' }}>R2</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffff00', height: '9.99%' }}>R1</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050', height: '57.14%' }}>R0</div>
+        </div>
       </div>
     </div>
   )
@@ -376,8 +519,6 @@ function XrayFluxChart({ data }) {
 
 // Solar Flares Section
 function SolarFlaresSection({ flares }) {
-  console.log('[SolarFlaresSection] Flares data:', flares)
-
   if (!flares || flares.length === 0) {
     return (
       <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
@@ -422,8 +563,6 @@ function SolarFlaresSection({ flares }) {
 
 // WSA-Enlil Animation Player
 function EnlilAnimationPlayer({ animation }) {
-  console.log('[EnlilAnimationPlayer] Animation data:', animation)
-
   const [currentFrame, setCurrentFrame] = useState(0)
   const [playing, setPlaying] = useState(false)
 
