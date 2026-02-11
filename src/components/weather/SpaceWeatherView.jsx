@@ -175,7 +175,7 @@ function KpIndexChart({ data }) {
             <span
               key={val}
               className="absolute"
-              style={{ top: `${idx * 10}%`, transform: 'translateY(50%)' }}
+              style={{ top: `${idx * 10}%`, transform: 'translateY(60%)' }}
             >
               {val}
             </span>
