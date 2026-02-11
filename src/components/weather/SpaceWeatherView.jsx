@@ -126,7 +126,7 @@ function KpIndexChart({ data }) {
   // If no data in last 72h, show error
   if (last72h.length === 0) {
     return (
-      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
+      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
         <h3 className="text-xl font-semibold mb-2">Geomagnetic Activity</h3>
         <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
           No recent KP index data available
@@ -167,7 +167,7 @@ function KpIndexChart({ data }) {
   }
 
   return (
-    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
+    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold">Geomagnetic Activity</h3>
         <div className="text-right">
@@ -438,7 +438,7 @@ function SolarXrayFluxChart({ data }) {
 
   if (last72h.length === 0) {
     return (
-      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
+      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
         <h3 className="text-xl font-semibold mb-2">Solar X-ray Flux</h3>
         <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
           No recent X-ray flux data available
@@ -494,7 +494,7 @@ function SolarXrayFluxChart({ data }) {
   // R5: 9.99% | R4: 4.30% | R3: 14.28% | R2: 4.30% | R1: 9.99% | R0: 57.14%
 
   return (
-    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
+    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold">Solar X-ray Flux</h3>
         <div className="text-right">
