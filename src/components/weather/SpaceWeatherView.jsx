@@ -39,7 +39,6 @@ function SpaceWeatherView() {
   }
 
   const handleClearCache = () => {
-    console.log('[SpaceWeatherView] Clearing cache and reloading data...')
     clearAllCache()
     loadData()
   }
@@ -81,9 +80,6 @@ function SpaceWeatherView() {
         <SolarXrayFluxChart data={data.xrayFlux} />
       </div>
 
-      {/* Active Alerts */}
-      <AlertsSection alerts={data.alerts} />
-
       {/* Solar Activity Stats Grid */}
       <SolarActivityStats
         solarWind={data.solarWind}
@@ -110,18 +106,9 @@ function KpIndexChart({ data }) {
     return <LoadingCard title="Geomagnetic Activity" />
   }
 
-  console.log('[KpIndexChart] Total data points:', data.length)
-  console.log('[KpIndexChart] First 3 items:', data.slice(0, 3))
-  console.log('[KpIndexChart] Sample KP values:', data.slice(0, 10).map(d => d.kp))
-
   // Get last 3 days (72 hours) of data
   const now = new Date()
   const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
-
-  console.log('[KpIndexChart] Last 72h data points:', last72h.length)
-  if (last72h.length > 0) {
-    console.log('[KpIndexChart] Last 72h KP values:', last72h.slice(0, 10).map(d => d.kp))
-  }
 
   // If no data in last 72h, show error
   if (last72h.length === 0) {
@@ -142,11 +129,7 @@ function KpIndexChart({ data }) {
     sampledData.push(last72h[i])
   }
 
-  console.log('[KpIndexChart] Sampled data for chart:', sampledData.length, 'items')
-  console.log('[KpIndexChart] Sampled KP values:', sampledData.map(d => d.kp))
-
   const latestKp = data[data.length - 1]?.kp || 0
-  console.log('[KpIndexChart] Latest KP value:', latestKp, 'from item:', data[data.length - 1])
 
   // Get G-scale color based on KP value (NOAA standard)
   const getKpColor = (kp) => {
@@ -208,7 +191,6 @@ function KpIndexChart({ data }) {
               {sampledData.map((item, idx) => {
                 const height = (item.kp / 9) * 100
                 const barColor = getKpColor(item.kp)
-                console.log(`[KpIndexChart] Bar ${idx}: KP=${item.kp}, height=${height}%`)
                 return (
                   <div key={idx} className="flex-1 h-full flex flex-col justify-end relative">
                     {/* Vertical gridline at start of each day */}
@@ -272,55 +254,8 @@ function KpIndexChart({ data }) {
   )
 }
 
-// Active Alerts Section
-function AlertsSection({ alerts }) {
-  if (!alerts || alerts.length === 0) {
-    return (
-      <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/30">
-        <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-          <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Active Alerts
-        </h3>
-        <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-          No active space weather alerts
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-3">
-      <h3 className="text-xl font-semibold">Active Alerts</h3>
-      {alerts.slice(0, 5).map((alert, idx) => (
-        <div
-          key={idx}
-          className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="font-semibold text-yellow-600 dark:text-yellow-400 mb-1">
-                {alert.product}
-              </div>
-              <p className="text-sm whitespace-pre-wrap">{alert.message}</p>
-            </div>
-            <div className="text-right text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap">
-              {alert.issueTime.toLocaleString()}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // Solar Activity Stats
 function SolarActivityStats({ solarWind, xrayFlux, protonFlux, sunspotNumber }) {
-  console.log('[SolarActivityStats] Solar wind:', solarWind)
-  console.log('[SolarActivityStats] Proton flux:', protonFlux)
-  console.log('[SolarActivityStats] Sunspot:', sunspotNumber)
-
   const latestXray = xrayFlux && xrayFlux.length > 0 ? xrayFlux[xrayFlux.length - 1] : null
 
   // Convert flux to class
@@ -584,8 +519,6 @@ function SolarXrayFluxChart({ data }) {
 
 // Solar Flares Section
 function SolarFlaresSection({ flares }) {
-  console.log('[SolarFlaresSection] Flares data:', flares)
-
   if (!flares || flares.length === 0) {
     return (
       <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
@@ -630,8 +563,6 @@ function SolarFlaresSection({ flares }) {
 
 // WSA-Enlil Animation Player
 function EnlilAnimationPlayer({ animation }) {
-  console.log('[EnlilAnimationPlayer] Animation data:', animation)
-
   const [currentFrame, setCurrentFrame] = useState(0)
   const [playing, setPlaying] = useState(false)
 
