@@ -192,7 +192,7 @@ function KpIndexChart({ data }) {
             <span
               key={val}
               className="absolute"
-              style={{ top: `${idx * 10}%`, transform: 'translateY(-50%)' }}
+              style={{ top: `${idx * 10}%`, transform: 'translateY(50%)' }}
             >
               {val}
             </span>
@@ -492,16 +492,14 @@ function SolarXrayFluxChart({ data }) {
           </span>
         </div>
 
-        {/* Y-axis labels: X, M, C, B, A — centered in the midpoint of each class band */}
-        {/* Each class spans one log decade. Boundaries: X@28.57%, M@42.86%, C@57.14%, B@71.43%, A@85.71%, bottom@100% */}
-        {/* Midpoints: X=(28.57+42.86)/2=35.71%, M=50%, C=64.29%, B=78.57%, A=92.86% */}
+        {/* Y-axis labels: X, M, C, B, A —*/}
         <div className="relative h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary" style={{ width: '12px' }}>
           {[
-            { label: 'X', yPct: 35.71 },
-            { label: 'M', yPct: 50.00 },
-            { label: 'C', yPct: 64.29 },
-            { label: 'B', yPct: 78.57 },
-            { label: 'A', yPct: 92.86 },
+            { label: 'X', yPct: 15 },
+            { label: 'M', yPct: 35 },
+            { label: 'C', yPct: 50 },
+            { label: 'B', yPct: 70 },
+            { label: 'A', yPct: 90 },
           ].map(({ label, yPct }) => (
             <span
               key={label}
@@ -523,13 +521,13 @@ function SolarXrayFluxChart({ data }) {
           >
             <defs>
               <linearGradient id="xrayFillGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"     stopColor="#c00000" />
-                <stop offset="9.99%"  stopColor="#ff0000" />
+                <stop offset="0%" stopColor="#c00000" />
+                <stop offset="9.99%" stopColor="#ff0000" />
                 <stop offset="14.29%" stopColor="#ed7d31" />
                 <stop offset="28.57%" stopColor="#ffc000" />
                 <stop offset="32.87%" stopColor="#ffff00" />
                 <stop offset="42.86%" stopColor="#92d050" />
-                <stop offset="100%"   stopColor="#92d050" />
+                <stop offset="100%" stopColor="#92d050" />
               </linearGradient>
             </defs>
             {/* Filled area */}
@@ -572,12 +570,12 @@ function SolarXrayFluxChart({ data }) {
 
         {/* R-scale — aligned with log-scale gridlines */}
         <div className="flex flex-col h-48 w-12 ml-2">
-          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20"  style={{ backgroundColor: '#c00000', height: '9.99%' }}>R5</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20"  style={{ backgroundColor: '#ff0000', height: '4.30%' }}>R4</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20"  style={{ backgroundColor: '#ed7d31', height: '14.28%' }}>R3</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20"  style={{ backgroundColor: '#ffc000', height: '4.30%' }}>R2</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20"  style={{ backgroundColor: '#ffff00', height: '9.99%' }}>R1</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20"  style={{ backgroundColor: '#92d050', height: '57.14%' }}>R0</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#c00000', height: '9.99%' }}>R5</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ff0000', height: '4.30%' }}>R4</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ed7d31', height: '14.28%' }}>R3</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffc000', height: '4.30%' }}>R2</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffff00', height: '9.99%' }}>R1</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050', height: '57.14%' }}>R0</div>
         </div>
       </div>
     </div>
