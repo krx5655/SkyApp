@@ -75,8 +75,11 @@ function SpaceWeatherView() {
         </button>
       </div>
 
-      {/* KP Index Bar Graph */}
-      <KpIndexChart data={data.kpIndex} />
+      {/* Charts Row: KP Index + Solar X-ray Flux side by side */}
+      <div className="flex gap-4 flex-wrap">
+        <KpIndexChart data={data.kpIndex} />
+        <SolarXrayFluxChart data={data.xrayFlux} />
+      </div>
 
       {/* Active Alerts */}
       <AlertsSection alerts={data.alerts} />
@@ -88,9 +91,6 @@ function SpaceWeatherView() {
         protonFlux={data.protonFlux}
         sunspotNumber={data.sunspotNumber}
       />
-
-      {/* X-ray Flux Chart */}
-      <XrayFluxChart data={data.xrayFlux} />
 
       {/* Recent Solar Flares */}
       <SolarFlaresSection flares={data.solarFlares} />
@@ -395,46 +395,209 @@ function StatCard({ title, value, unit }) {
   )
 }
 
-// X-ray Flux Chart
-function XrayFluxChart({ data }) {
+// Solar X-ray Flux Chart (NOAA-style, replaces old XrayFluxChart)
+function SolarXrayFluxChart({ data }) {
+  const MIN_LOG = -9  // 10^-9 W/m² (below A class)
+  const MAX_LOG = -2  // 10^-2 W/m² (above X20)
+  const LOG_RANGE = MAX_LOG - MIN_LOG // 7 decades
+
+  // Helper: log-scale y position (0% = top = highest flux, 100% = bottom = lowest)
+  const fluxToY = (flux) => {
+    const logFlux = Math.log10(Math.max(flux, Math.pow(10, MIN_LOG)))
+    return Math.max(0, Math.min(100, ((MAX_LOG - logFlux) / LOG_RANGE) * 100))
+  }
+
+  // Flare class label from flux
+  const getFluxClass = (flux) => {
+    if (!flux || flux <= 0) return '--'
+    const log = Math.log10(flux)
+    if (log < -8) return `A${(flux * 1e8).toFixed(1)}`
+    if (log < -7) return `B${(flux * 1e7).toFixed(1)}`
+    if (log < -6) return `C${(flux * 1e6).toFixed(1)}`
+    if (log < -5) return `M${(flux * 1e5).toFixed(1)}`
+    return `X${(flux * 1e4).toFixed(1)}`
+  }
+
+  const getFluxLabel = (flux) => {
+    if (!flux || flux <= 0) return 'No data'
+    const log = Math.log10(flux)
+    if (log < -7) return 'Normal'
+    if (log < -6) return 'Moderate'
+    if (log < -5) return 'Active'
+    if (log < -4) return 'M-class flare'
+    return 'X-class flare'
+  }
+
   if (!data || data.length === 0) {
-    return <LoadingCard title="X-Ray Flux (6 Hours)" />
+    return <LoadingCard title="Solar X-ray Flux" />
   }
 
-  // Sample data to show ~50 points
+  // Filter to last 72 hours
+  const now = new Date()
+  const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
+
+  if (last72h.length === 0) {
+    return (
+      <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
+        <h3 className="text-xl font-semibold mb-2">Solar X-ray Flux</h3>
+        <p className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+          No recent X-ray flux data available
+        </p>
+      </div>
+    )
+  }
+
+  // Sample to ~300 points for smooth SVG rendering
   const sampledData = []
-  const step = Math.max(1, Math.floor(data.length / 50))
-  for (let i = 0; i < data.length; i += step) {
-    sampledData.push(data[i])
+  const step = Math.max(1, Math.floor(last72h.length / 300))
+  for (let i = 0; i < last72h.length; i += step) {
+    sampledData.push(last72h[i])
   }
 
-  const maxFlux = Math.max(...sampledData.map(d => d.flux))
-  const minFlux = Math.min(...sampledData.map(d => d.flux))
+  // Build SVG points
+  const svgPoints = sampledData.map((item, idx) => ({
+    x: (idx / Math.max(sampledData.length - 1, 1)) * 100,
+    y: fluxToY(item.flux),
+    time: item.time
+  }))
+
+  // SVG path strings
+  const linePath = svgPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
+  const fillPath = linePath +
+    ` L ${svgPoints[svgPoints.length - 1].x},100 L ${svgPoints[0].x},100 Z`
+
+  // Find day boundaries for date labels and vertical lines
+  const dayBoundaries = []
+  let currentDay = null
+  sampledData.forEach((item, idx) => {
+    const dayStr = item.time.toDateString()
+    if (dayStr !== currentDay) {
+      currentDay = dayStr
+      dayBoundaries.push({
+        idx,
+        xPct: (idx / Math.max(sampledData.length - 1, 1)) * 100,
+        label: item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      })
+    }
+  })
+
+  const latestFlux = last72h[last72h.length - 1]?.flux || 0
+
+  // Gradient color stops (y% from top = high flux to bottom = low flux)
+  // R5/R4 boundary (X20 = 10^-2.699):  y = 9.99%
+  // R4/R3 boundary (X10 = 10^-3):      y = 14.29%
+  // R3/R2 boundary (X1  = 10^-4):      y = 28.57%
+  // R2/R1 boundary (M5  = 10^-4.301):  y = 32.87%
+  // R1/R0 boundary (M1  = 10^-5):      y = 42.86%
+
+  // R-scale box heights (proportional to log-scale ranges)
+  // R5: 9.99% | R4: 4.30% | R3: 14.28% | R2: 4.30% | R1: 9.99% | R0: 57.14%
 
   return (
-    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-      <h3 className="text-xl font-semibold mb-4">X-Ray Flux (6 Hours)</h3>
-
-      <div className="relative h-48">
-        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-          <polyline
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.5"
-            className="text-blue-500"
-            points={sampledData.map((d, i) => {
-              const x = (i / (sampledData.length - 1)) * 100
-              const y = 100 - ((Math.log10(d.flux) - Math.log10(minFlux)) / (Math.log10(maxFlux) - Math.log10(minFlux))) * 100
-              return `${x},${y}`
-            }).join(' ')}
-          />
-        </svg>
+    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border max-w-4xl">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-semibold">Solar X-ray Flux</h3>
+        <div className="text-right">
+          <div className="text-3xl font-bold">{getFluxClass(latestFlux)}</div>
+          <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+            {getFluxLabel(latestFlux)}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-2 flex justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-        <span>{sampledData[0]?.time.toLocaleTimeString()}</span>
-        <span>6-Hour History</span>
-        <span>{sampledData[sampledData.length - 1]?.time.toLocaleTimeString()}</span>
+      <div className="flex gap-2 items-center">
+        {/* Vertical "Flare Class" label */}
+        <div className="flex items-center justify-center h-48" style={{ width: '20px' }}>
+          <span className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap transform -rotate-90">
+            Flare Class
+          </span>
+        </div>
+
+        {/* Y-axis labels: X, M, C, B, A — positioned at log-scale percentages */}
+        <div className="relative h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary" style={{ width: '12px' }}>
+          {[
+            { label: 'X', yPct: 28.57 },
+            { label: 'M', yPct: 42.86 },
+            { label: 'C', yPct: 57.14 },
+            { label: 'B', yPct: 71.43 },
+            { label: 'A', yPct: 85.71 },
+          ].map(({ label, yPct }) => (
+            <span
+              key={label}
+              className="absolute"
+              style={{ top: `${yPct}%`, transform: 'translateY(-50%)' }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Chart area */}
+        <div className="flex-1 relative h-48">
+          {/* SVG: filled area + line */}
+          <svg
+            className="absolute inset-0 w-full h-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="xrayFillGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"     stopColor="#c00000" />
+                <stop offset="9.99%"  stopColor="#ff0000" />
+                <stop offset="14.29%" stopColor="#ed7d31" />
+                <stop offset="28.57%" stopColor="#ffc000" />
+                <stop offset="32.87%" stopColor="#ffff00" />
+                <stop offset="42.86%" stopColor="#92d050" />
+                <stop offset="100%"   stopColor="#92d050" />
+              </linearGradient>
+            </defs>
+            {/* Filled area */}
+            <path d={fillPath} fill="url(#xrayFillGradient)" opacity="0.85" />
+            {/* Line on top */}
+            <path d={linePath} fill="none" stroke="#1a1a1a" strokeWidth="0.3" />
+          </svg>
+
+          {/* Gridlines — foreground */}
+          <div className="absolute inset-0" style={{ zIndex: 10, pointerEvents: 'none' }}>
+            {/* Horizontal gridlines at each log decade */}
+            {[-8, -7, -6, -5, -4, -3].map((logVal) => (
+              <div
+                key={logVal}
+                className="absolute left-0 right-0 border-t border-gray-300 dark:border-gray-600"
+                style={{ top: `${((MAX_LOG - logVal) / LOG_RANGE) * 100}%`, opacity: 0.3 }}
+              />
+            ))}
+            {/* Vertical day separators */}
+            {dayBoundaries.slice(1).map(({ xPct, label }) => (
+              <div
+                key={label}
+                className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600"
+                style={{ left: `${xPct}%`, opacity: 0.3 }}
+              />
+            ))}
+          </div>
+
+          {/* X-axis date labels */}
+          {dayBoundaries.map(({ xPct, label }) => (
+            <div
+              key={label}
+              className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap"
+              style={{ left: `${xPct}%`, bottom: '-20px', transform: 'translateX(-50%)' }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* R-scale — aligned with log-scale gridlines */}
+        <div className="flex flex-col h-48 w-12 ml-2">
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20"  style={{ backgroundColor: '#c00000', height: '9.99%' }}>R5</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20"  style={{ backgroundColor: '#ff0000', height: '4.30%' }}>R4</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20"  style={{ backgroundColor: '#ed7d31', height: '14.28%' }}>R3</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20"  style={{ backgroundColor: '#ffc000', height: '4.30%' }}>R2</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20"  style={{ backgroundColor: '#ffff00', height: '9.99%' }}>R1</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20"  style={{ backgroundColor: '#92d050', height: '57.14%' }}>R0</div>
+        </div>
       </div>
     </div>
   )
