@@ -23,6 +23,14 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
     setSelectedDay(day)
   }
 
+  const handleBack = () => {
+    if (currentScreen === 'forecast' && forecastView === 'daily') {
+      setForecastView('weekly')
+    } else {
+      onNavigateHome()
+    }
+  }
+
   // Callback to receive forecast data from WeeklyForecast
   const handleForecastLoaded = (forecast) => {
     setForecastData(forecast)
@@ -46,34 +54,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
     },
   ]
 
-  const switcherButtons = currentScreen === 'forecast' ? [
-    {
-      label: 'Weekly',
-      active: forecastView === 'weekly',
-      onClick: () => setForecastView('weekly'),
-    },
-    {
-      label: 'Daily',
-      active: forecastView === 'daily',
-      onClick: () => {
-        // If no day is selected, select today
-        if (!selectedDay && forecastData.length > 0) {
-          const today = new Date()
-          const todayForecast = forecastData.find(day => {
-            const dayDate = new Date(day.date)
-            return dayDate.toDateString() === today.toDateString()
-          })
-          if (todayForecast) {
-            setSelectedDay(todayForecast)
-          } else {
-            // If today is not in the forecast, select the first day
-            setSelectedDay(forecastData[0])
-          }
-        }
-        setForecastView('daily')
-      },
-    },
-  ] : []
+  const switcherButtons = []
 
   // Determine header title based on current screen
   let headerTitle = ''
@@ -89,7 +70,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
     <div className="h-screen flex flex-col">
       <Header
         showBackButton
-        onBack={onNavigateHome}
+        onBack={handleBack}
         onOpenSettings={onOpenSettings}
         title={headerTitle}
       />
