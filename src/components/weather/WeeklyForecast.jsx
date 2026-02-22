@@ -93,18 +93,14 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
   return (
     <div className="p-6 space-y-6">
       <div className="relative">
-        {/* Current Weather in upper left */}
-        {currentWeather && (
-          <div className="absolute left-0 top-0 text-left">
-            <div className="text-3xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
-          </div>
-        )}
-
-        {/* City name in upper right */}
-        <div className="absolute right-0 top-0 text-right">
+        {/* Location and current temp stacked in upper left */}
+        <div className="absolute left-0 top-0 text-left">
           <p className="text-xl font-semibold text-macos-text-secondary-light dark:text-macos-text-secondary">
             {cityName}
           </p>
+          {currentWeather && (
+            <div className="text-3xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
+          )}
         </div>
 
         {/* Spacer to maintain layout */}

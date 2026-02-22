@@ -17,6 +17,9 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [temperatureUnit, setTemperatureUnitState] = useState('F')
   const [windSpeedUnit, setWindSpeedUnitState] = useState('mph')
   const [radarProvider, setRadarProviderState] = useState('noaa')
+  const [updateStatus, setUpdateStatus] = useState('idle') // idle | checking | up-to-date | available | updating | error
+  const [updateCommitCount, setUpdateCommitCount] = useState(0)
+  const [updateError, setUpdateError] = useState('')
 
   // Load current location, API key, and selected adapter
   useEffect(() => {
@@ -163,6 +166,40 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     setRadarProvider(provider)
     radarService.switchProvider(provider)
     radarService.refresh()
+  }
+
+  async function handleCheckForUpdates() {
+    setUpdateStatus('checking')
+    try {
+      const result = await window.electron.checkForUpdates()
+      if (result.error) {
+        setUpdateError(result.error)
+        setUpdateStatus('error')
+      } else if (result.hasUpdates) {
+        setUpdateCommitCount(result.commitCount)
+        setUpdateStatus('available')
+      } else {
+        setUpdateStatus('up-to-date')
+      }
+    } catch (err) {
+      setUpdateError('Update check failed. Is the app running in Electron?')
+      setUpdateStatus('error')
+    }
+  }
+
+  async function handlePerformUpdate() {
+    setUpdateStatus('updating')
+    try {
+      const result = await window.electron.performUpdate()
+      if (!result.success) {
+        setUpdateError(result.error)
+        setUpdateStatus('error')
+      }
+      // On success the app will relaunch automatically
+    } catch (err) {
+      setUpdateError('Update failed unexpectedly.')
+      setUpdateStatus('error')
+    }
   }
 
   return (
@@ -440,6 +477,83 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             </div>
           </section>
 
+          {/* Updates */}
+          <section>
+            <h3 className="text-lg font-semibold mb-4">Updates</h3>
+            <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-3">
+              <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                Pull the latest version from GitHub
+              </div>
+
+              {updateStatus === 'idle' && (
+                <button
+                  onClick={handleCheckForUpdates}
+                  className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity text-sm font-medium"
+                >
+                  Check for Updates
+                </button>
+              )}
+
+              {updateStatus === 'checking' && (
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  Checking for updates...
+                </div>
+              )}
+
+              {updateStatus === 'up-to-date' && (
+                <div className="space-y-2">
+                  <div className="text-sm text-green-600 dark:text-green-400">✓ App is up to date</div>
+                  <button
+                    onClick={() => setUpdateStatus('idle')}
+                    className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary hover:underline"
+                  >
+                    Check again
+                  </button>
+                </div>
+              )}
+
+              {updateStatus === 'available' && (
+                <div className="space-y-3">
+                  <div className="text-sm text-blue-600 dark:text-blue-400">
+                    Update available ({updateCommitCount} new {updateCommitCount === 1 ? 'commit' : 'commits'}). Install now?
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handlePerformUpdate}
+                      className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity text-sm font-medium"
+                    >
+                      Yes, Update
+                    </button>
+                    <button
+                      onClick={() => setUpdateStatus('idle')}
+                      className="px-4 py-2 rounded-lg bg-macos-border-light dark:bg-macos-border hover:opacity-90 transition-opacity text-sm font-medium"
+                    >
+                      Not Now
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {updateStatus === 'updating' && (
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  Updating... The app will restart automatically when complete.
+                </div>
+              )}
+
+              {updateStatus === 'error' && (
+                <div className="space-y-2">
+                  <div className="text-sm text-red-600 dark:text-red-400">{updateError}</div>
+                  <button
+                    onClick={() => setUpdateStatus('idle')}
+                    className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary hover:underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* About */}
           <section>
             <h3 className="text-lg font-semibold mb-4">About</h3>
@@ -458,12 +572,18 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 p-6 bg-macos-card-light dark:bg-macos-card border-t border-macos-border-light dark:border-macos-border">
+        <div className="sticky bottom-0 p-6 bg-macos-card-light dark:bg-macos-card border-t border-macos-border-light dark:border-macos-border space-y-3">
           <button
             onClick={onClose}
             className="w-full touch-target px-6 py-3 rounded-xl bg-macos-blue-light dark:bg-macos-blue text-white font-medium hover:opacity-90 transition-opacity"
           >
             Done
+          </button>
+          <button
+            onClick={() => window.electron?.exitApp()}
+            className="w-full touch-target px-6 py-3 rounded-xl bg-red-600 text-white font-medium hover:opacity-90 transition-opacity"
+          >
+            Exit App
           </button>
         </div>
       </div>

@@ -1,7 +1,8 @@
 // Preload script for Electron
-// Currently empty but ready for future IPC communication
-const { contextBridge } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
-  // Future: Add any Node.js APIs we need to expose to renderer
+  exitApp: () => ipcRenderer.invoke('exit-app'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  performUpdate: () => ipcRenderer.invoke('perform-update'),
 })
