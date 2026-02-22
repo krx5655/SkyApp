@@ -75,7 +75,7 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
         title={headerTitle}
       />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
         {currentScreen === 'forecast' && (
           <>
             {forecastView === 'weekly' && (
