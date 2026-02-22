@@ -12,14 +12,17 @@ function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [locationRefreshTrigger, setLocationRefreshTrigger] = useState(0)
 
-  // Touch-to-scroll: Electron doesn't translate touch drags into scroll gestures
-  // automatically, so we drive scrollTop directly from touch deltas.
+  // Pointer-driven scroll: the touchscreen emits pointer/mouse events, not touch
+  // events, so we drive scrollTop manually from pointer deltas. This also works
+  // for regular mouse drag in the browser. Text selection is suppressed while a
+  // vertical drag is in progress.
   useEffect(() => {
     let startY = 0
     let startX = 0
     let prevY = 0
     let scrollTarget = null
     let directionLocked = null // 'vertical' | 'horizontal' | null
+    let isScrollDragging = false
 
     const findScrollable = (el) => {
       while (el && el !== document.documentElement) {
@@ -32,37 +35,64 @@ function App() {
       return null
     }
 
-    const onTouchStart = (e) => {
-      startY = prevY = e.touches[0].clientY
-      startX = e.touches[0].clientX
-      scrollTarget = findScrollable(e.target)
+    const onPointerDown = (e) => {
+      if (e.button !== 0) return
+      const target = findScrollable(e.target)
+      if (!target) return
+
+      // Skip clicks inside the scrollbar gutter (rightmost 15px of the container)
+      const rect = target.getBoundingClientRect()
+      if (e.clientX > rect.right - 15) return
+
+      startY = prevY = e.clientY
+      startX = e.clientX
+      scrollTarget = target
       directionLocked = null
+      isScrollDragging = false
     }
 
-    const onTouchMove = (e) => {
+    const onPointerMove = (e) => {
       if (!scrollTarget) return
-      const touch = e.touches[0]
 
-      // Lock scroll direction on the first significant movement
+      // Lock direction on the first significant movement (4px threshold)
       if (directionLocked === null) {
-        const dy = Math.abs(startY - touch.clientY)
-        const dx = Math.abs(startX - touch.clientX)
+        const dy = Math.abs(startY - e.clientY)
+        const dx = Math.abs(startX - e.clientX)
         if (dy < 4 && dx < 4) return
         directionLocked = dy >= dx ? 'vertical' : 'horizontal'
       }
 
       if (directionLocked !== 'vertical') return
 
-      scrollTarget.scrollTop += prevY - touch.clientY
-      prevY = touch.clientY
+      // Suppress text selection the moment we commit to a vertical scroll drag
+      if (!isScrollDragging) {
+        isScrollDragging = true
+        document.documentElement.style.userSelect = 'none'
+      }
+
+      scrollTarget.scrollTop += prevY - e.clientY
+      prevY = e.clientY
     }
 
-    document.addEventListener('touchstart', onTouchStart, { passive: true })
-    document.addEventListener('touchmove', onTouchMove, { passive: true })
+    const onPointerUp = () => {
+      if (isScrollDragging) {
+        document.documentElement.style.userSelect = ''
+      }
+      scrollTarget = null
+      directionLocked = null
+      isScrollDragging = false
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('pointermove', onPointerMove)
+    document.addEventListener('pointerup', onPointerUp)
+    document.addEventListener('pointercancel', onPointerUp)
 
     return () => {
-      document.removeEventListener('touchstart', onTouchStart)
-      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('pointermove', onPointerMove)
+      document.removeEventListener('pointerup', onPointerUp)
+      document.removeEventListener('pointercancel', onPointerUp)
     }
   }, [])
 
