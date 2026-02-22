@@ -19,4 +19,49 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
+
+  /* Enable momentum touch scrolling on overflow containers */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+}
+
+/* ===== macOS-style scrollbar ===== */
+
+/* Vertical scrollbar: narrow and rounded */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* Hide all horizontal scrollbars */
+::-webkit-scrollbar:horizontal {
+  height: 0;
+  display: none;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hidden by default; shown via .is-scrolling class */
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+/* Light mode: show scrollbar while scrolling */
+.is-scrolling::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 100, 108, 0.5);
+}
+
+/* Dark mode: show scrollbar while scrolling */
+.dark .is-scrolling::-webkit-scrollbar-thumb {
+  background-color: rgba(160, 160, 168, 0.5);
 }

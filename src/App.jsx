@@ -12,6 +12,34 @@ function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [locationRefreshTrigger, setLocationRefreshTrigger] = useState(0)
 
+  // Show scrollbar while scrolling, then fade it out 500ms after scrolling stops
+  useEffect(() => {
+    const scrollTimers = new Map()
+
+    const handleScroll = (e) => {
+      const el = e.target
+      if (!(el instanceof Element)) return
+
+      el.classList.add('is-scrolling')
+
+      if (scrollTimers.has(el)) {
+        clearTimeout(scrollTimers.get(el))
+      }
+
+      scrollTimers.set(el, setTimeout(() => {
+        el.classList.remove('is-scrolling')
+        scrollTimers.delete(el)
+      }, 500))
+    }
+
+    window.addEventListener('scroll', handleScroll, { capture: true, passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, { capture: true })
+      scrollTimers.forEach(timer => clearTimeout(timer))
+    }
+  }, [])
+
   // Apply theme class to document
   useEffect(() => {
     if (theme === 'dark') {
