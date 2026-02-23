@@ -76,8 +76,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
   // Handle swipe/drag end
   const handleDragEnd = (event, info) => {
-    const swipeThreshold = 50 // pixels
-    const swipeVelocity = 0.5 // velocity threshold
+    const swipeThreshold = 120 // pixels
+    const swipeVelocity = 500 // px/s velocity threshold
 
     if (info.offset.x > swipeThreshold || info.velocity.x > swipeVelocity) {
       // Swipe right -> previous day
@@ -289,13 +289,6 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
       initial={{ x: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">
-          {format(displayDate, 'EEEE, MMMM d')}
-        </h2>
-      </div>
-
       {/* Loading/Error States */}
       {loading && (
         <div className="flex justify-center items-center py-12">
@@ -344,7 +337,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
               {/* Main graph area */}
               <div
                 className="flex-1 relative cursor-crosshair"
-                style={{ height: '240px' }}
+                style={{ height: '180px' }}
+                onPointerDown={(e) => e.nativeEvent.stopPropagation()}
                 onMouseMove={handleTempGraphMouseMove}
                 onMouseLeave={handleTempGraphMouseLeave}
               >
@@ -550,7 +544,8 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
               {/* Main graph area */}
               <div
                 className="flex-1 relative cursor-crosshair"
-                style={{ height: '240px' }}
+                style={{ height: '180px' }}
+                onPointerDown={(e) => e.nativeEvent.stopPropagation()}
                 onMouseMove={handlePrecipGraphMouseMove}
                 onMouseLeave={handlePrecipGraphMouseLeave}
               >

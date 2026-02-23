@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { format } from 'date-fns'
 import Header from '../common/Header'
 import Footer from '../common/Footer'
 import ButtonSwitcher from '../common/ButtonSwitcher'
@@ -59,7 +60,9 @@ function WeatherApp({ onNavigateHome, onOpenSettings, refreshTrigger }) {
   // Determine header title based on current screen
   let headerTitle = ''
   if (currentScreen === 'forecast') {
-    headerTitle = forecastView === 'weekly' ? '7-Day Forecast' : 'Daily Forecast'
+    headerTitle = forecastView === 'weekly'
+      ? '7-Day Forecast'
+      : selectedDay?.date ? format(new Date(selectedDay.date), 'EEE, MMM d') : 'Daily Forecast'
   } else if (currentScreen === 'radar') {
     headerTitle = 'Radar'
   } else if (currentScreen === 'space') {
