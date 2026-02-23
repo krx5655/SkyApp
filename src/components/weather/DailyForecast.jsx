@@ -338,7 +338,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
               <div
                 className="flex-1 relative cursor-crosshair"
                 style={{ height: '180px' }}
-                onPointerDown={(e) => e.nativeEvent.stopPropagation()}
+                onPointerDownCapture={(e) => e.nativeEvent.stopPropagation()}
                 onMouseMove={handleTempGraphMouseMove}
                 onMouseLeave={handleTempGraphMouseLeave}
               >
@@ -372,6 +372,15 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                       <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.1" />
                     </linearGradient>
                   </defs>
+
+                  {/* Horizontal grid lines */}
+                  {[0, 50, 100, 150, 200].map(y => (
+                    <line key={`th${y}`} x1="0" y1={y} x2="100" y2={y} stroke={isDarkMode ? '#4b5563' : '#d1d5db'} strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke" />
+                  ))}
+                  {/* Vertical grid lines at 12AM, 6AM, 12PM, 6PM */}
+                  {[0, 6, 12, 18].map(hour => (
+                    <line key={`tv${hour}`} x1={(hour / hourRange) * 100} y1="0" x2={(hour / hourRange) * 100} y2="200" stroke={isDarkMode ? '#4b5563' : '#d1d5db'} strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke" />
+                  ))}
 
                   {/* Create smooth curve points */}
                   {(() => {
@@ -545,7 +554,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
               <div
                 className="flex-1 relative cursor-crosshair"
                 style={{ height: '180px' }}
-                onPointerDown={(e) => e.nativeEvent.stopPropagation()}
+                onPointerDownCapture={(e) => e.nativeEvent.stopPropagation()}
                 onMouseMove={handlePrecipGraphMouseMove}
                 onMouseLeave={handlePrecipGraphMouseLeave}
               >
@@ -579,6 +588,15 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                       <stop offset="100%" stopColor="rgb(6, 182, 212)" stopOpacity="0.1" />
                     </linearGradient>
                   </defs>
+
+                  {/* Horizontal grid lines */}
+                  {[0, 50, 100, 150, 200].map(y => (
+                    <line key={`ph${y}`} x1="0" y1={y} x2="100" y2={y} stroke={isDarkMode ? '#4b5563' : '#d1d5db'} strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke" />
+                  ))}
+                  {/* Vertical grid lines at 12AM, 6AM, 12PM, 6PM */}
+                  {[0, 6, 12, 18].map(hour => (
+                    <line key={`pv${hour}`} x1={(hour / hourRange) * 100} y1="0" x2={(hour / hourRange) * 100} y2="200" stroke={isDarkMode ? '#4b5563' : '#d1d5db'} strokeWidth="0.5" opacity="0.3" vectorEffect="non-scaling-stroke" />
+                  ))}
 
                   {/* Create smooth curve points */}
                   {(() => {
