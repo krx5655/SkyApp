@@ -13,7 +13,7 @@ function Header({ showBackButton = false, onBack, onOpenSettings, title = null }
   }, [])
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-macos-card-light/50 dark:bg-macos-card/50 backdrop-blur-xl">
+    <header className="flex items-center justify-between px-6 py-2 bg-macos-card-light/50 dark:bg-macos-card/50 backdrop-blur-xl">
       {/* Left side - Back button or empty space */}
       <div className="flex items-center min-w-[120px]">
         {showBackButton ? (
