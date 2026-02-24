@@ -129,6 +129,30 @@ function KpIndexChart({ data }) {
     sampledData.push(last72h[i])
   }
 
+  // Compute day boundaries for vertical gridlines and date labels
+  const kpDayBoundaries = []
+  let currentKpDay = null
+  sampledData.forEach((item, idx) => {
+    const dayStr = item.time.toDateString()
+    if (dayStr !== currentKpDay) {
+      currentKpDay = dayStr
+      kpDayBoundaries.push({
+        idx,
+        xPct: (idx / Math.max(sampledData.length - 1, 1)) * 100,
+        label: item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      })
+    }
+  })
+
+  // Returns Kp notation with +/- suffix for values >= 4
+  const getKpNotation = (kp) => {
+    const base = Math.floor(kp)
+    const frac = kp - base
+    if (frac <= 0.2) return `${base}`
+    if (frac <= 0.7) return `${base}+`
+    return `${base + 1}-`
+  }
+
   const latestKp = data[data.length - 1]?.kp || 0
 
   // Get G-scale color based on KP value (NOAA standard)
@@ -171,11 +195,11 @@ function KpIndexChart({ data }) {
 
         {/* Y-axis labels (1-9) — absolutely positioned to align with gridlines */}
         <div className="relative h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pr-2" style={{ width: '14px' }}>
-          {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((val, idx) => (
+          {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((val) => (
             <span
               key={val}
               className="absolute"
-              style={{ top: `${idx * 10}%`, transform: 'translateY(60%)' }}
+              style={{ top: `${(1 - val / 9) * 100}%`, transform: 'translateY(-50%)' }}
             >
               {val}
             </span>
@@ -193,12 +217,13 @@ function KpIndexChart({ data }) {
                 const barColor = getKpColor(item.kp)
                 return (
                   <div key={idx} className="flex-1 h-full flex flex-col justify-end relative">
-                    {/* Vertical gridline at start of each day */}
-                    {idx % 8 === 0 && idx > 0 && (
+                    {item.kp >= 4 && (
                       <div
-                        className="absolute left-0 top-0 bottom-0 border-l border-gray-300 dark:border-gray-600"
-                        style={{ opacity: 0.3, zIndex: 10 }}
-                      />
+                        className="absolute left-0 right-0 text-center text-[9px] font-bold text-gray-900 dark:text-white leading-none"
+                        style={{ bottom: `${height}%` }}
+                      >
+                        {getKpNotation(item.kp)}
+                      </div>
                     )}
                     <div
                       className="w-full transition-all"
@@ -210,33 +235,36 @@ function KpIndexChart({ data }) {
               })}
             </div>
 
-            {/* Horizontal gridlines — foreground, using Tailwind class only for consistent color */}
-            <div className="absolute inset-0 flex flex-col" style={{ zIndex: 10, pointerEvents: 'none' }}>
-              {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((value) => (
+            {/* Horizontal gridlines and vertical day separators — foreground */}
+            <div className="absolute inset-0" style={{ zIndex: 10, pointerEvents: 'none' }}>
+              {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((val) => (
                 <div
-                  key={value}
-                  className="border-t border-gray-300 dark:border-gray-600"
-                  style={{ opacity: 0.3, flex: 1 }}
+                  key={val}
+                  className="absolute left-0 right-0 border-t border-gray-300 dark:border-gray-600"
+                  style={{ top: `${(1 - val / 9) * 100}%`, opacity: 0.3 }}
+                />
+              ))}
+              {kpDayBoundaries.slice(1).map(({ xPct, label }) => (
+                <div
+                  key={label}
+                  className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600"
+                  style={{ left: `${xPct}%`, opacity: 0.3 }}
                 />
               ))}
             </div>
           </div>
 
-          {/* Date labels — in own row so they never affect bar widths */}
+          {/* Date labels — aligned with vertical day gridlines */}
           <div className="relative h-5 mt-1">
-            {sampledData.map((item, idx) => {
-              if (idx % 8 !== 0 && idx !== sampledData.length - 1) return null
-              const xPct = (idx / Math.max(sampledData.length - 1, 1)) * 100
-              return (
-                <div
-                  key={idx}
-                  className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap"
-                  style={{ left: `${xPct}%`, transform: 'translateX(-50%)' }}
-                >
-                  {item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </div>
-              )
-            })}
+            {kpDayBoundaries.map(({ xPct, label }) => (
+              <div
+                key={label}
+                className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap"
+                style={{ left: `${xPct}%`, transform: 'translateX(-50%)' }}
+              >
+                {label}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -247,7 +275,7 @@ function KpIndexChart({ data }) {
           <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ed7d31', height: '11.11%' }}>G3</div>
           <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffc000', height: '11.11%' }}>G2</div>
           <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffff00', height: '11.11%' }}>G1</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050', height: '55.56%' }}>G0</div>
+          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050', height: '44.44%' }}>G0</div>
         </div>
       </div>
     </div>
@@ -427,19 +455,19 @@ function SolarXrayFluxChart({ data }) {
           </span>
         </div>
 
-        {/* Y-axis labels: X, M, C, B, A —*/}
+        {/* Y-axis labels: X, M, C, B, A — centered in each log-scale band */}
         <div className="relative h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary" style={{ width: '12px' }}>
           {[
-            { label: 'X', yPct: 15 },
-            { label: 'M', yPct: 35 },
-            { label: 'C', yPct: 50 },
-            { label: 'B', yPct: 70 },
-            { label: 'A', yPct: 90 },
-          ].map(({ label, yPct }) => (
+            { label: 'X', logMid: -3.5 },
+            { label: 'M', logMid: -4.5 },
+            { label: 'C', logMid: -5.5 },
+            { label: 'B', logMid: -6.5 },
+            { label: 'A', logMid: -7.5 },
+          ].map(({ label, logMid }) => (
             <span
               key={label}
               className="absolute"
-              style={{ top: `${yPct}%`, transform: 'translateY(-50%)' }}
+              style={{ top: `${((MAX_LOG - logMid) / LOG_RANGE) * 100}%`, transform: 'translateY(-50%)' }}
             >
               {label}
             </span>
@@ -506,9 +534,9 @@ function SolarXrayFluxChart({ data }) {
         {/* R-scale — aligned with log-scale gridlines */}
         <div className="flex flex-col h-48 w-12 ml-2">
           <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#c00000', height: '9.99%' }}>R5</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ff0000', height: '4.30%' }}>R4</div>
+          <div className="border border-gray-400/20" style={{ backgroundColor: '#ff0000', height: '4.30%' }}></div>
           <div className="flex items-center justify-center text-[10px] font-semibold text-white border border-gray-400/20" style={{ backgroundColor: '#ed7d31', height: '14.28%' }}>R3</div>
-          <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffc000', height: '4.30%' }}>R2</div>
+          <div className="border border-gray-400/20" style={{ backgroundColor: '#ffc000', height: '4.30%' }}></div>
           <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#ffff00', height: '9.99%' }}>R1</div>
           <div className="flex items-center justify-center text-[10px] font-semibold text-black border border-gray-400/20" style={{ backgroundColor: '#92d050', height: '57.14%' }}>R0</div>
         </div>
