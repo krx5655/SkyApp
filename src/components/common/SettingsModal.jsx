@@ -5,7 +5,75 @@ import { clearAllCache } from '../../services/weather/cache'
 import { getOpenWeatherApiKey, setOpenWeatherApiKey, getSelectedAdapter, setSelectedAdapter, hasOpenWeatherApiKey, getTemperatureUnit, setTemperatureUnit, getWindSpeedUnit, setWindSpeedUnit, getRadarProvider, setRadarProvider } from '../../services/weather/config'
 import radarService from '../../services/radar/radarService'
 
+const CATEGORIES = [
+  {
+    id: 'appearance',
+    label: 'Appearance',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+      </svg>
+    ),
+  },
+  {
+    id: 'location',
+    label: 'Location',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'units',
+    label: 'Units',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+      </svg>
+    ),
+  },
+  {
+    id: 'weather',
+    label: 'Weather',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'updates',
+    label: 'Updates',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    ),
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      </svg>
+    ),
+  },
+  {
+    id: 'exit',
+    label: 'Exit',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+    ),
+  },
+]
+
 function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
+  const [activeCategory, setActiveCategory] = useState('appearance')
   const [citySearch, setCitySearch] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
@@ -21,35 +89,29 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
   const [updateCommitCount, setUpdateCommitCount] = useState(0)
   const [updateError, setUpdateError] = useState('')
 
-  // Load current location, API key, and selected adapter
   useEffect(() => {
     const location = weatherService.getLocation()
     setCurrentLocation(location)
 
-    // Load saved API key
     const savedKey = getOpenWeatherApiKey()
     if (savedKey) {
       setApiKey(savedKey)
       setApiKeyStatus('saved')
     }
 
-    // Load selected adapter
     const adapter = getSelectedAdapter()
     setSelectedApi(adapter)
 
-    // Load unit preferences
     const tempUnit = getTemperatureUnit()
     setTemperatureUnitState(tempUnit)
 
     const windUnit = getWindSpeedUnit()
     setWindSpeedUnitState(windUnit)
 
-    // Load radar provider
     const radar = getRadarProvider()
     setRadarProviderState(radar)
   }, [])
 
-  // Search cities
   useEffect(() => {
     if (citySearch.length < 2) {
       setSearchResults([])
@@ -67,46 +129,31 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
       } finally {
         setSearching(false)
       }
-    }, 500) // Debounce
+    }, 500)
 
     return () => clearTimeout(timer)
   }, [citySearch])
 
-  // Select location
   async function selectLocation(location) {
     setUpdatingLocation(true)
     weatherService.setLocation(location.latitude, location.longitude, location.city)
     setCurrentLocation({ latitude: location.latitude, longitude: location.longitude, name: location.city })
     setCitySearch('')
     setSearchResults([])
-
-    // Clear cache to force refetch with new location
     clearAllCache()
-
-    // Trigger refresh in parent components
-    if (onLocationChange) {
-      onLocationChange()
-    }
-
-    // Show updating state for 1 second
+    if (onLocationChange) onLocationChange()
     await new Promise(resolve => setTimeout(resolve, 1000))
     setUpdatingLocation(false)
   }
 
-  // Save OpenWeatherMap API key
   function saveApiKey() {
     if (apiKey.trim()) {
       const success = setOpenWeatherApiKey(apiKey.trim())
       if (success) {
         setApiKeyStatus('success')
-        // Reinitialize adapters with new API key
         weatherService.initializeAdapters()
-        // Clear cache to force refetch with new adapter
         clearAllCache()
-        // Trigger refresh
-        if (onLocationChange) {
-          onLocationChange()
-        }
+        if (onLocationChange) onLocationChange()
         setTimeout(() => setApiKeyStatus('saved'), 2000)
       } else {
         setApiKeyStatus('error')
@@ -114,53 +161,37 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
     }
   }
 
-  // Remove API key
   function removeApiKey() {
     setOpenWeatherApiKey(null)
     setApiKey('')
     setApiKeyStatus('')
-    // Switch back to weather.gov
     setSelectedApi('weathergov')
     setSelectedAdapter('weathergov')
     weatherService.switchAdapter('weathergov')
     clearAllCache()
-    if (onLocationChange) {
-      onLocationChange()
-    }
+    if (onLocationChange) onLocationChange()
   }
 
-  // Change API provider
   function handleApiProviderChange(provider) {
     setSelectedApi(provider)
     setSelectedAdapter(provider)
     weatherService.switchAdapter(provider)
     clearAllCache()
-    if (onLocationChange) {
-      onLocationChange()
-    }
+    if (onLocationChange) onLocationChange()
   }
 
-  // Change temperature unit
   function handleTemperatureUnitChange(unit) {
     setTemperatureUnitState(unit)
     setTemperatureUnit(unit)
-    // Trigger refresh to update all temperature displays
-    if (onLocationChange) {
-      onLocationChange()
-    }
+    if (onLocationChange) onLocationChange()
   }
 
-  // Change wind speed unit
   function handleWindSpeedUnitChange(unit) {
     setWindSpeedUnitState(unit)
     setWindSpeedUnit(unit)
-    // Trigger refresh to update all wind speed displays
-    if (onLocationChange) {
-      onLocationChange()
-    }
+    if (onLocationChange) onLocationChange()
   }
 
-  // Change radar provider
   function handleRadarProviderChange(provider) {
     setRadarProviderState(provider)
     setRadarProvider(provider)
@@ -195,44 +226,17 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
         setUpdateError(result.error)
         setUpdateStatus('error')
       }
-      // On success the app will relaunch automatically
     } catch (err) {
       setUpdateError('Update failed unexpectedly.')
       setUpdateStatus('error')
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-auto bg-macos-card-light dark:bg-macos-card rounded-3xl shadow-2xl border border-macos-border-light dark:border-macos-border">
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-6 bg-macos-card-light dark:bg-macos-card border-b border-macos-border-light dark:border-macos-border">
-          <h2 className="text-2xl font-bold">Settings</h2>
-          <button
-            onClick={onClose}
-            className="touch-target p-2 rounded-lg hover:bg-macos-border-light dark:hover:bg-macos-border transition-colors"
-            aria-label="Close"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Updating Location Indicator */}
-          {updatingLocation && (
-            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-center">
-              <div className="text-blue-600 dark:text-blue-400 font-medium">
-                Updating weather...
-              </div>
-            </div>
-          )}
-
-          {/* Theme */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Appearance</h3>
+  function renderContent() {
+    switch (activeCategory) {
+      case 'appearance':
+        return (
+          <div className="space-y-4">
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
               <div className="flex items-center justify-between">
                 <div>
@@ -249,158 +253,68 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                 </button>
               </div>
             </div>
-          </section>
+          </div>
+        )
 
-          {/* Location */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Location</h3>
-            <div className="space-y-3">
-              {currentLocation && (
-                <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
-                  <div className="font-medium mb-2">Current Location</div>
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    {currentLocation.name || 'Custom Location'}
-                  </div>
-                  <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary mt-1">
-                    {currentLocation.latitude.toFixed(4)}° N, {Math.abs(currentLocation.longitude).toFixed(4)}° {currentLocation.longitude < 0 ? 'W' : 'E'}
-                  </div>
+      case 'location':
+        return (
+          <div className="space-y-4">
+            {updatingLocation && (
+              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-center">
+                <div className="text-blue-600 dark:text-blue-400 font-medium">Updating weather...</div>
+              </div>
+            )}
+
+            {currentLocation && (
+              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
+                <div className="font-medium mb-1">Current Location</div>
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                  {currentLocation.name || 'Custom Location'}
+                </div>
+                <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary mt-1">
+                  {currentLocation.latitude.toFixed(4)}° N, {Math.abs(currentLocation.longitude).toFixed(4)}° {currentLocation.longitude < 0 ? 'W' : 'E'}
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <input
+                type="text"
+                value={citySearch}
+                onChange={(e) => setCitySearch(e.target.value)}
+                placeholder="Search for a city..."
+                className="w-full px-4 py-3 rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+              />
+              {(searching || searchResults.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-2 max-h-56 overflow-y-auto rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border shadow-xl z-10">
+                  {searching ? (
+                    <div className="p-4 text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
+                      Searching...
+                    </div>
+                  ) : (
+                    searchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        onClick={() => selectLocation(result)}
+                        className="w-full p-4 text-left hover:bg-macos-bg-light dark:hover:bg-macos-bg transition-colors border-b border-macos-border-light dark:border-macos-border last:border-b-0"
+                      >
+                        <div className="font-medium">{result.city}</div>
+                        <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                          {result.state && `${result.state}, `}{result.country}
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
-
-              {/* City Search */}
-              <div className="relative">
-                <input
-                  type="text"
-                  value={citySearch}
-                  onChange={(e) => setCitySearch(e.target.value)}
-                  placeholder="Search for a city..."
-                  className="w-full px-4 py-3 rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
-                />
-
-                {/* Search Results */}
-                {(searching || searchResults.length > 0) && (
-                  <div className="absolute top-full left-0 right-0 mt-2 max-h-64 overflow-y-auto rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border shadow-xl z-10">
-                    {searching ? (
-                      <div className="p-4 text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
-                        Searching...
-                      </div>
-                    ) : (
-                      searchResults.map((result) => (
-                        <button
-                          key={result.id}
-                          onClick={() => selectLocation(result)}
-                          className="w-full p-4 text-left hover:bg-macos-bg-light dark:hover:bg-macos-bg transition-colors border-b border-macos-border-light dark:border-macos-border last:border-b-0"
-                        >
-                          <div className="font-medium">{result.city}</div>
-                          <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                            {result.state && `${result.state}, `}{result.country}
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
-          </section>
+          </div>
+        )
 
-          {/* Weather API */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Weather API</h3>
+      case 'units':
+        return (
+          <div className="space-y-4">
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-4">
-              {/* API Provider Selection */}
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Weather Provider</span>
-                <select
-                  value={selectedApi}
-                  onChange={(e) => handleApiProviderChange(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
-                >
-                  <option value="openweather">
-                    OpenWeatherMap {!hasOpenWeatherApiKey() && '(API key required)'}
-                  </option>
-                  <option value="weathergov">Weather.gov</option>
-                </select>
-              </div>
-
-              {/* OpenWeatherMap API Key - Only show when openweather is selected or being configured */}
-              {selectedApi === 'openweather' && (
-                <div className="pt-2 border-t border-macos-border-light dark:border-macos-border space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={apiKey}
-                      onChange={(e) => {
-                        setApiKey(e.target.value)
-                        setApiKeyStatus('')
-                      }}
-                      placeholder="Enter your API key"
-                      className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
-                    />
-                    <button
-                      onClick={saveApiKey}
-                      disabled={!apiKey.trim()}
-                      className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                    >
-                      Save
-                    </button>
-                  </div>
-
-                  {apiKeyStatus === 'success' && (
-                    <div className="text-sm text-green-600 dark:text-green-400">
-                      ✓ API key saved successfully!
-                    </div>
-                  )}
-                  {apiKeyStatus === 'saved' && (
-                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                      API key configured
-                    </div>
-                  )}
-                  {apiKeyStatus === 'error' && (
-                    <div className="text-sm text-red-600 dark:text-red-400">
-                      Failed to save API key
-                    </div>
-                  )}
-
-                  {apiKey && (
-                    <button
-                      onClick={removeApiKey}
-                      className="text-sm text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Remove API key
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Radar Provider */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Radar Provider</h3>
-            <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Radar Data Source</div>
-                  <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                    Choose your radar provider
-                  </div>
-                </div>
-                <select
-                  value={radarProvider}
-                  onChange={(e) => handleRadarProviderChange(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
-                >
-                  <option value="noaa">NOAA (US Only)</option>
-                </select>
-              </div>
-            </div>
-          </section>
-
-          {/* Units */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Units</h3>
-            <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-medium">Temperature</span>
                 <select
@@ -425,61 +339,95 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                 </select>
               </div>
             </div>
-          </section>
+          </div>
+        )
 
-          {/* Notifications */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Notifications</h3>
-            <div className="space-y-3">
+      case 'weather':
+        return (
+          <div className="space-y-4">
+            {/* Weather API */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-macos-text-secondary-light dark:text-macos-text-secondary mb-2">Weather API</h3>
+              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Provider</span>
+                  <select
+                    value={selectedApi}
+                    onChange={(e) => handleApiProviderChange(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                  >
+                    <option value="openweather">
+                      OpenWeatherMap {!hasOpenWeatherApiKey() && '(API key required)'}
+                    </option>
+                    <option value="weathergov">Weather.gov</option>
+                  </select>
+                </div>
+
+                {selectedApi === 'openweather' && (
+                  <div className="pt-2 border-t border-macos-border-light dark:border-macos-border space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={apiKey}
+                        onChange={(e) => {
+                          setApiKey(e.target.value)
+                          setApiKeyStatus('')
+                        }}
+                        placeholder="Enter your API key"
+                        className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
+                      />
+                      <button
+                        onClick={saveApiKey}
+                        disabled={!apiKey.trim()}
+                        className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                      >
+                        Save
+                      </button>
+                    </div>
+                    {apiKeyStatus === 'success' && (
+                      <div className="text-sm text-green-600 dark:text-green-400">✓ API key saved successfully!</div>
+                    )}
+                    {apiKeyStatus === 'saved' && (
+                      <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">API key configured</div>
+                    )}
+                    {apiKeyStatus === 'error' && (
+                      <div className="text-sm text-red-600 dark:text-red-400">Failed to save API key</div>
+                    )}
+                    {apiKey && (
+                      <button onClick={removeApiKey} className="text-sm text-red-600 dark:text-red-400 hover:underline">
+                        Remove API key
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Radar Provider */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-macos-text-secondary-light dark:text-macos-text-secondary mb-2">Radar Provider</h3>
               <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">Severe Weather Alerts</div>
-                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                      Get notified of dangerous weather
-                    </div>
+                    <div className="font-medium">Radar Data Source</div>
+                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">Choose your radar provider</div>
                   </div>
-                  <input type="checkbox" className="w-5 h-5" defaultChecked />
-                </div>
-              </div>
-              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Astronomical Events</div>
-                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                      Meteor showers, eclipses, etc.
-                    </div>
-                  </div>
-                  <input type="checkbox" className="w-5 h-5" defaultChecked />
+                  <select
+                    value={radarProvider}
+                    onChange={(e) => handleRadarProviderChange(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                  >
+                    <option value="noaa">NOAA (US Only)</option>
+                  </select>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+        )
 
-          {/* Data & Cache */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Data & Cache</h3>
-            <div className="space-y-3">
-              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
-                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mb-2">
-                  Clear cached weather data to force refresh
-                </div>
-                <button
-                  onClick={() => {
-                    clearAllCache()
-                    alert('Cache cleared successfully')
-                  }}
-                  className="px-4 py-2 rounded-lg bg-macos-border-light dark:bg-macos-border hover:bg-red-500/20 transition-colors text-sm font-medium"
-                >
-                  Clear Cache
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Updates */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Updates</h3>
+      case 'updates':
+        return (
+          <div className="space-y-4">
             <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border space-y-3">
               <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
                 Pull the latest version from GitHub
@@ -503,10 +451,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
               {updateStatus === 'up-to-date' && (
                 <div className="space-y-2">
                   <div className="text-sm text-green-600 dark:text-green-400">✓ App is up to date</div>
-                  <button
-                    onClick={() => setUpdateStatus('idle')}
-                    className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary hover:underline"
-                  >
+                  <button onClick={() => setUpdateStatus('idle')} className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary hover:underline">
                     Check again
                   </button>
                 </div>
@@ -543,49 +488,147 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
               {updateStatus === 'error' && (
                 <div className="space-y-2">
                   <div className="text-sm text-red-600 dark:text-red-400">{updateError}</div>
-                  <button
-                    onClick={() => setUpdateStatus('idle')}
-                    className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary hover:underline"
-                  >
+                  <button onClick={() => setUpdateStatus('idle')} className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary hover:underline">
                     Try again
                   </button>
                 </div>
               )}
             </div>
-          </section>
+          </div>
+        )
 
-          {/* About */}
-          <section>
-            <h3 className="text-lg font-semibold mb-4">About</h3>
-            <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
-              <div className="text-sm space-y-1">
-                <div><span className="font-medium">Version:</span> 0.1.0 (MVP)</div>
-                <div>
-                  <span className="font-medium">Weather API:</span> {apiKey ? 'OpenWeatherMap (with Weather.gov fallback)' : 'Weather.gov'}
+      case 'notifications':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Severe Weather Alerts</div>
+                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                      Get notified of dangerous weather
+                    </div>
+                  </div>
+                  <input type="checkbox" className="w-5 h-5" defaultChecked />
                 </div>
-                <div className="pt-2 text-macos-text-secondary-light dark:text-macos-text-secondary">
-                  Weather & Sky App for Raspberry Pi
+              </div>
+              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Astronomical Events</div>
+                    <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
+                      Meteor showers, eclipses, etc.
+                    </div>
+                  </div>
+                  <input type="checkbox" className="w-5 h-5" defaultChecked />
                 </div>
               </div>
             </div>
-          </section>
-        </div>
+          </div>
+        )
 
-        {/* Footer */}
-        <div className="sticky bottom-0 p-6 bg-macos-card-light dark:bg-macos-card border-t border-macos-border-light dark:border-macos-border space-y-3">
+      case 'exit':
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-macos-text-secondary-light dark:text-macos-text-secondary mb-2">Data & Cache</h3>
+              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mb-3">
+                  Clear cached weather data to force a fresh refresh
+                </div>
+                <button
+                  onClick={() => {
+                    clearAllCache()
+                    alert('Cache cleared successfully')
+                  }}
+                  className="px-4 py-2 rounded-lg bg-macos-border-light dark:bg-macos-border hover:bg-red-500/20 transition-colors text-sm font-medium"
+                >
+                  Clear Cache
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-macos-text-secondary-light dark:text-macos-text-secondary mb-2">Application</h3>
+              <div className="p-4 rounded-xl bg-macos-bg-light dark:bg-macos-bg border border-macos-border-light dark:border-macos-border">
+                <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary mb-3">
+                  Quit SkyApp
+                </div>
+                <button
+                  onClick={() => window.electron?.exitApp()}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:opacity-90 transition-opacity text-sm font-medium"
+                >
+                  Exit App
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="relative w-full max-w-2xl bg-macos-card-light dark:bg-macos-card rounded-3xl shadow-2xl border border-macos-border-light dark:border-macos-border overflow-hidden flex flex-col" style={{ height: '92vh' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-2.5 border-b border-macos-border-light dark:border-macos-border shrink-0">
+          <h2 className="text-xl font-bold">Settings</h2>
           <button
             onClick={onClose}
-            className="w-full touch-target px-6 py-3 rounded-xl bg-macos-blue-light dark:bg-macos-blue text-white font-medium hover:opacity-90 transition-opacity"
+            className="touch-target p-2 rounded-lg hover:bg-macos-border-light dark:hover:bg-macos-border transition-colors"
+            aria-label="Close"
           >
-            Done
-          </button>
-          <button
-            onClick={() => window.electron?.exitApp()}
-            className="w-full touch-target px-6 py-3 rounded-xl bg-red-600 text-white font-medium hover:opacity-90 transition-opacity"
-          >
-            Exit App
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
+
+        {/* Body: sidebar + content */}
+        <div className="flex flex-1 min-h-0">
+
+          {/* Left Sidebar */}
+          <nav className="w-44 shrink-0 border-r border-macos-border-light dark:border-macos-border py-3 px-2 flex flex-col gap-0.5 overflow-y-auto overflow-x-hidden bg-macos-bg-light/50 dark:bg-macos-bg/50">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex items-center gap-2.5 w-full text-left px-3 py-2.5 text-sm font-medium transition-colors rounded-lg ${
+                  activeCategory === cat.id
+                    ? 'bg-macos-blue-light dark:bg-macos-blue text-white'
+                    : 'text-macos-text-light dark:text-macos-text hover:bg-macos-border-light dark:hover:bg-macos-border'
+                } ${cat.id === 'exit' ? 'mt-auto' : ''}`}
+                style={cat.id === 'exit' ? { marginTop: 'auto' } : {}}
+              >
+                {cat.icon}
+                {cat.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Right Content */}
+          <div className="flex flex-col flex-1 min-w-0">
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {renderContent()}
+            </div>
+
+            {/* Footer with Done button */}
+            <div className="shrink-0 px-5 py-3 border-t border-macos-border-light dark:border-macos-border flex justify-end bg-macos-card-light dark:bg-macos-card">
+              <button
+                onClick={onClose}
+                className="touch-target px-6 py-2 rounded-xl bg-macos-blue-light dark:bg-macos-blue text-white font-medium hover:opacity-90 transition-opacity text-sm"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   )
