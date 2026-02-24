@@ -313,7 +313,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
       {hourlyData.length > 0 && (
         <div className="grid grid-cols-12 gap-4">
           {/* Temperature Graph - 6/12 columns (50%) */}
-          <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
+          <div className="col-span-6 relative px-6 pt-6 pb-5 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
             {/* Temperature overlay in top-left */}
             <div className="absolute top-6 left-6 z-10">
               {isToday && currentWeather ? (
@@ -333,7 +333,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
             </div>
 
             {/* Graph container */}
-            <div className="relative flex mt-16">
+            <div className="relative flex mt-14">
               {/* Main graph area */}
               <div
                 className="flex-1 relative cursor-crosshair"
@@ -349,7 +349,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                     return (
                       <div
                         key={hour}
-                        className="text-2xl flex-1 text-center drop-shadow-md"
+                        className="text-base flex-1 text-center drop-shadow-md"
                         title={data?.condition}
                         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
                       >
@@ -361,10 +361,10 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
 
                 {/* SVG for line chart and gradient */}
                 <svg
-                  className="absolute top-8 left-0 right-12 bottom-8"
+                  className="absolute top-8 left-0"
                   viewBox="0 0 100 200"
                   preserveAspectRatio="none"
-                  style={{ width: '100%', height: 'calc(100% - 64px)' }}
+                  style={{ width: 'calc(100% - 3rem)', height: 'calc(100% - 3.25rem)' }}
                 >
                   <defs>
                     <linearGradient id="tempGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -533,7 +533,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
               </div>
 
               {/* Y-axis temperature scale */}
-              <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary py-8">
+              <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pt-8 pb-5">
                 <div>{convertTemperature(yAxisMax, tempUnit)}°</div>
                 <div>{convertTemperature(Math.floor((yAxisMax + yAxisMin) / 2), tempUnit)}°</div>
                 <div>{convertTemperature(yAxisMin, tempUnit)}°</div>
@@ -542,14 +542,14 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
           </div>
 
           {/* Precipitation Graph - 6/12 columns (50%) */}
-          <div className="col-span-6 relative p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
+          <div className="col-span-6 relative px-6 pt-6 pb-5 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
             {/* Precipitation title overlay in top-left */}
             <div className="absolute top-6 left-6 z-10">
               <div className="text-2xl font-bold">Precipitation</div>
             </div>
 
             {/* Graph container */}
-            <div className="relative flex mt-16">
+            <div className="relative flex mt-14">
               {/* Main graph area */}
               <div
                 className="flex-1 relative cursor-crosshair"
@@ -558,29 +558,12 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                 onMouseMove={handlePrecipGraphMouseMove}
                 onMouseLeave={handlePrecipGraphMouseLeave}
               >
-                {/* Weather icons row - show at display hours where data exists */}
-                <div className="absolute top-0 left-0 right-12 flex justify-between px-2">
-                  {displayHours.map((hour) => {
-                    const data = hourlyData.find(d => d.hour === hour)
-                    return (
-                      <div
-                        key={hour}
-                        className="text-2xl flex-1 text-center drop-shadow-md"
-                        title={data?.condition}
-                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
-                      >
-                        {data?.icon || ''}
-                      </div>
-                    )
-                  })}
-                </div>
-
                 {/* SVG for line chart and gradient */}
                 <svg
-                  className="absolute top-8 left-0 right-12 bottom-8"
+                  className="absolute top-0 left-0"
                   viewBox="0 0 100 200"
                   preserveAspectRatio="none"
-                  style={{ width: '100%', height: 'calc(100% - 64px)' }}
+                  style={{ width: 'calc(100% - 3rem)', height: 'calc(100% - 1.25rem)' }}
                 >
                   <defs>
                     <linearGradient id="precipGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -744,7 +727,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
               </div>
 
               {/* Y-axis precipitation scale */}
-              <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary py-8">
+              <div className="w-12 relative flex flex-col justify-between text-xs text-macos-text-secondary-light dark:text-macos-text-secondary pt-0 pb-5">
                 <div>100%</div>
                 <div>50%</div>
                 <div>0%</div>
