@@ -313,9 +313,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
       {hourlyData.length > 0 && (
         <div className="grid grid-cols-12 gap-4">
           {/* Temperature Graph - 6/12 columns (50%) */}
-          <div className="col-span-6 relative px-6 pt-6 pb-5 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
+          <div className="col-span-6 relative px-6 pt-3 pb-5 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
             {/* Temperature overlay in top-left */}
-            <div className="absolute top-6 left-6 z-10">
+            <div className="absolute top-3 left-6 z-10">
               {isToday && currentWeather ? (
                 <>
                   <div className="text-2xl font-bold">{convertTemperature(currentWeather.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
@@ -542,9 +542,9 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
           </div>
 
           {/* Precipitation Graph - 6/12 columns (50%) */}
-          <div className="col-span-6 relative px-6 pt-6 pb-5 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
+          <div className="col-span-6 relative px-6 pt-3 pb-5 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border overflow-hidden">
             {/* Precipitation title overlay in top-left */}
-            <div className="absolute top-6 left-6 z-10">
+            <div className="absolute top-3 left-6 z-10">
               <div className="text-2xl font-bold">Precipitation</div>
             </div>
 
