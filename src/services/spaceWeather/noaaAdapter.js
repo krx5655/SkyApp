@@ -47,10 +47,6 @@ class NoaaSpaceWeatherAdapter {
     try {
       const data = await this.fetch('/products/noaa-planetary-k-index.json')
 
-      console.log('[NoaaAdapter] Raw KP Index JSON response:', data)
-      console.log('[NoaaAdapter] Total rows received:', data?.length)
-      console.log('[NoaaAdapter] First 5 rows:', data?.slice(0, 5))
-
       if (!data || data.length === 0) {
         console.warn('[NoaaAdapter] No KP index data received')
         return []
@@ -67,9 +63,6 @@ class NoaaSpaceWeatherAdapter {
         timestamp: row[0]
       }))
 
-      console.log('[NoaaAdapter] Parsed KP data (first 3):', parsed.slice(0, 3))
-      console.log('[NoaaAdapter] Parsed KP data (last 3):', parsed.slice(-3))
-
       return parsed
     } catch (error) {
       console.error('[NoaaAdapter] Failed to get KP index:', error)
@@ -84,7 +77,11 @@ class NoaaSpaceWeatherAdapter {
   async getXrayFlux() {
     try {
       const data = await this.fetch('/json/goes/primary/xrays-3-day.json')
-      return data.map(item => ({
+      // Filter to the long channel (0.1-0.8nm) used for NOAA flare classification.
+      // The API returns both the long channel and the short channel (0.05-0.4nm),
+      // which has values ~10x smaller and would shift data 1-2 flare classes too low.
+      const longChannel = data.filter(item => item.energy === '0.1-0.8nm')
+      return longChannel.map(item => ({
         time: this.parseUTCDate(item.time_tag),
         flux: parseFloat(item.flux),
         timestamp: item.time_tag,
