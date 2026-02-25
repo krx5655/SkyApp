@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import spaceWeatherService from '../../services/spaceWeather/spaceWeatherService.js'
-import { clearAllCache } from '../../services/spaceWeather/cache.js'
 
 function SpaceWeatherView() {
   const [loading, setLoading] = useState(true)
@@ -38,11 +37,6 @@ function SpaceWeatherView() {
     }
   }
 
-  const handleClearCache = () => {
-    clearAllCache()
-    loadData()
-  }
-
   if (loading && !data.kpIndex) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -63,16 +57,6 @@ function SpaceWeatherView() {
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
-
-      {/* Debug: Clear Cache Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleClearCache}
-          className="px-4 py-2 text-sm rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-        >
-          Clear Cache & Refresh Data
-        </button>
-      </div>
 
       {/* Charts Row: KP Index + Solar X-ray Flux side by side */}
       <div className="flex gap-4 flex-wrap">
@@ -138,7 +122,7 @@ function KpIndexChart({ data }) {
       currentKpDay = dayStr
       kpDayBoundaries.push({
         idx,
-        xPct: (idx / Math.max(sampledData.length - 1, 1)) * 100,
+        xPct: (idx / sampledData.length) * 100,
         label: item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       })
     }
@@ -219,8 +203,8 @@ function KpIndexChart({ data }) {
                   <div key={idx} className="flex-1 h-full flex flex-col justify-end relative">
                     {item.kp >= 4 && (
                       <div
-                        className="absolute left-0 right-0 text-center text-[9px] font-bold text-gray-900 dark:text-white leading-none"
-                        style={{ bottom: `${height}%` }}
+                        className="absolute left-0 right-0 text-center text-[11px] font-bold text-gray-900 dark:text-white leading-none"
+                        style={{ bottom: `calc(${height}% + 4px)` }}
                       >
                         {getKpNotation(item.kp)}
                       </div>
@@ -455,23 +439,27 @@ function SolarXrayFluxChart({ data }) {
           </span>
         </div>
 
-        {/* Y-axis labels: X, M, C, B, A — centered in each log-scale band */}
-        <div className="relative h-48 text-xs text-macos-text-secondary-light dark:text-macos-text-secondary" style={{ width: '12px' }}>
+        {/* Y-axis labels: X, M, C, B, A — bordered boxes aligned to log-scale, NOAA-style */}
+        <div className="relative h-48" style={{ width: '16px' }}>
           {[
-            { label: 'X', logMid: -3.5 },
-            { label: 'M', logMid: -4.5 },
-            { label: 'C', logMid: -5.5 },
-            { label: 'B', logMid: -6.5 },
-            { label: 'A', logMid: -7.5 },
-          ].map(({ label, logMid }) => (
-            <span
-              key={label}
-              className="absolute"
-              style={{ top: `${((MAX_LOG - logMid) / LOG_RANGE) * 100}%`, transform: 'translateY(-50%)' }}
-            >
-              {label}
-            </span>
-          ))}
+            { label: 'X', logTop: -2, logBottom: -4 },
+            { label: 'M', logTop: -4, logBottom: -5 },
+            { label: 'C', logTop: -5, logBottom: -6 },
+            { label: 'B', logTop: -6, logBottom: -7 },
+            { label: 'A', logTop: -7, logBottom: -8 },
+          ].map(({ label, logTop, logBottom }) => {
+            const top = ((MAX_LOG - logTop) / LOG_RANGE) * 100
+            const height = ((logTop - logBottom) / LOG_RANGE) * 100
+            return (
+              <div
+                key={label}
+                className="absolute flex items-center justify-center text-[9px] font-bold border border-gray-400/30 text-macos-text-secondary-light dark:text-macos-text-secondary"
+                style={{ top: `${top}%`, height: `${height}%`, width: '100%' }}
+              >
+                {label}
+              </div>
+            )
+          })}
         </div>
 
         {/* Chart area */}
@@ -483,7 +471,7 @@ function SolarXrayFluxChart({ data }) {
             preserveAspectRatio="none"
           >
             <defs>
-              <linearGradient id="xrayFillGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="xrayFillGradient" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
                 <stop offset="0%" stopColor="#c00000" />
                 <stop offset="9.99%" stopColor="#ff0000" />
                 <stop offset="14.29%" stopColor="#ed7d31" />
@@ -507,6 +495,14 @@ function SolarXrayFluxChart({ data }) {
                 key={logVal}
                 className="absolute left-0 right-0 border-t border-gray-300 dark:border-gray-600"
                 style={{ top: `${((MAX_LOG - logVal) / LOG_RANGE) * 100}%`, opacity: 0.3 }}
+              />
+            ))}
+            {/* Additional R-scale boundary gridlines: R5/R4 (X20) and R2/R1 (M5) */}
+            {[9.99, 32.87].map((topPct) => (
+              <div
+                key={topPct}
+                className="absolute left-0 right-0 border-t border-gray-300 dark:border-gray-600"
+                style={{ top: `${topPct}%`, opacity: 0.3 }}
               />
             ))}
             {/* Vertical day separators */}
