@@ -9,7 +9,7 @@ function Footer({ buttons = [] }) {
             touch-target flex-1 max-w-[200px] px-6 py-2 rounded-xl font-medium transition-all
             ${
               button.active
-                ? 'bg-macos-blue-light dark:bg-macos-blue text-white shadow-lg'
+                ? 'bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white shadow-lg'
                 : 'bg-macos-card-light dark:bg-macos-card text-macos-text-light dark:text-macos-text hover:bg-macos-border-light dark:hover:bg-macos-border'
             }
           `}

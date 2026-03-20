@@ -19,7 +19,7 @@ function Header({ showBackButton = false, onBack, onOpenSettings, title = null }
         {showBackButton ? (
           <button
             onClick={onBack}
-            className="touch-target flex items-center gap-2 px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity"
+            className="touch-target flex items-center gap-2 px-4 py-2 rounded-lg bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white hover:opacity-90 transition-opacity"
           >
             <svg
               className="w-5 h-5"
