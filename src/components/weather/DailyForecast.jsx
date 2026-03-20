@@ -223,6 +223,10 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
     }
 
     fetchData()
+
+    // Auto-refresh every 15 minutes to keep weather data current
+    const interval = setInterval(fetchData, 15 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [selectedDay, refreshTrigger])
 
   const displayDate = selectedDay?.date ? new Date(selectedDay.date) : new Date()
