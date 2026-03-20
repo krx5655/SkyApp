@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
 import { format, addDays } from 'date-fns'
+import clearDaySvg from '@bybas/weather-icons/production/fill/all/clear-day.svg'
+import clearNightSvg from '@bybas/weather-icons/production/fill/all/clear-night.svg'
+import partlyCloudyDaySvg from '@bybas/weather-icons/production/fill/all/partly-cloudy-day.svg'
+import cloudySvg from '@bybas/weather-icons/production/fill/all/cloudy.svg'
+import rainSvg from '@bybas/weather-icons/production/fill/all/rain.svg'
+import thunderstormsRainSvg from '@bybas/weather-icons/production/fill/all/thunderstorms-rain.svg'
+import snowSvg from '@bybas/weather-icons/production/fill/all/snow.svg'
+import fogSvg from '@bybas/weather-icons/production/fill/all/fog.svg'
 import weatherService from '../../services/weather/weatherService'
 import { getTemperatureUnit } from '../../services/weather/config'
 import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
@@ -54,44 +62,21 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
     return () => clearInterval(interval)
   }, [refreshTrigger]) // onForecastLoaded intentionally omitted to prevent infinite loop
 
-  function getWeatherIcon(condition) {
-    switch (condition) {
-      case 'Sunny':
-        return (
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="5" strokeWidth={2} />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-          </svg>
-        )
-      case 'Partly Cloudy':
-        return (
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-          </svg>
-        )
-      case 'Cloudy':
-        return (
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-          </svg>
-        )
-      case 'Rainy':
-        return (
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 19v2m4-2v2m4-2v2" />
-          </svg>
-        )
-      case 'Stormy':
-        return (
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10l-3 6h4l-3 6" />
-          </svg>
-        )
-      default:
-        return null
+  function getWeatherIcon(emoji) {
+    const iconMap = {
+      '☀️': clearDaySvg,
+      '🌙': clearNightSvg,
+      '⛅': partlyCloudyDaySvg,
+      '☁️': cloudySvg,
+      '🌧️': rainSvg,
+      '⛈️': thunderstormsRainSvg,
+      '❄️': snowSvg,
+      '🌫️': fogSvg,
     }
+    const src = iconMap[emoji]
+    return src
+      ? <img src={src} width={52} height={52} alt={emoji} />
+      : <span className="text-4xl">{emoji}</span>
   }
 
   return (
@@ -142,13 +127,13 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
                   {day.shortDate}
                 </div>
 
-                <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform text-4xl">
-                  {typeof day.icon === 'string' ? day.icon : day.icon}
+                <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform">
+                  {getWeatherIcon(day.icon)}
                 </div>
 
                 <div className="flex flex-col gap-1 pt-1">
                   <div className="text-center">
-                    <div className="text-lg font-bold">{convertTemperature(day.high, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
+                    <div className="text-2xl font-bold">{convertTemperature(day.high, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
                   </div>
                   <div className="text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
                     <div className="text-sm">{convertTemperature(day.low, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
