@@ -54,7 +54,16 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
     return () => clearInterval(interval)
   }, [refreshTrigger]) // onForecastLoaded intentionally omitted to prevent infinite loop
 
-  function getWeatherIcon(condition) {
+  function getWeatherIcon(iconOrCondition) {
+    const emojiToCondition = {
+      '☀️': 'Sunny',
+      '🌙': 'Sunny',
+      '⛅': 'Partly Cloudy',
+      '☁️': 'Cloudy',
+      '🌧️': 'Rainy',
+      '⛈️': 'Stormy',
+    }
+    const condition = emojiToCondition[iconOrCondition] || iconOrCondition
     switch (condition) {
       case 'Sunny':
         return (
@@ -142,13 +151,13 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
                   {day.shortDate}
                 </div>
 
-                <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform text-4xl">
-                  {typeof day.icon === 'string' ? day.icon : day.icon}
+                <div className="flex justify-center text-macos-blue-light dark:text-macos-blue group-hover:scale-110 transition-transform">
+                  {getWeatherIcon(day.icon) || <span className="text-4xl">{day.icon}</span>}
                 </div>
 
                 <div className="flex flex-col gap-1 pt-1">
                   <div className="text-center">
-                    <div className="text-lg font-bold">{convertTemperature(day.high, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
+                    <div className="text-2xl font-bold">{convertTemperature(day.high, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
                   </div>
                   <div className="text-center text-macos-text-secondary-light dark:text-macos-text-secondary">
                     <div className="text-sm">{convertTemperature(day.low, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
