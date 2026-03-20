@@ -247,7 +247,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                 </div>
                 <button
                   onClick={onToggleTheme}
-                  className="touch-target px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity"
+                  className="touch-target px-4 py-2 rounded-lg bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white hover:opacity-90 transition-opacity"
                 >
                   Toggle
                 </button>
@@ -283,7 +283,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                 value={citySearch}
                 onChange={(e) => setCitySearch(e.target.value)}
                 placeholder="Search for a city..."
-                className="w-full px-4 py-3 rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                className="w-full px-4 py-3 rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-muted-light dark:focus:ring-macos-blue-muted"
               />
               {(searching || searchResults.length > 0) && (
                 <div className="absolute top-full left-0 right-0 mt-2 max-h-56 overflow-y-auto rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border shadow-xl z-10">
@@ -320,7 +320,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                 <select
                   value={temperatureUnit}
                   onChange={(e) => handleTemperatureUnitChange(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-muted-light dark:focus:ring-macos-blue-muted"
                 >
                   <option value="F">Fahrenheit (°F)</option>
                   <option value="C">Celsius (°C)</option>
@@ -331,7 +331,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                 <select
                   value={windSpeedUnit}
                   onChange={(e) => handleWindSpeedUnitChange(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                  className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-muted-light dark:focus:ring-macos-blue-muted"
                 >
                   <option value="mph">Miles per hour (mph)</option>
                   <option value="kmh">Kilometers per hour (km/h)</option>
@@ -354,7 +354,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                   <select
                     value={selectedApi}
                     onChange={(e) => handleApiProviderChange(e.target.value)}
-                    className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                    className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-muted-light dark:focus:ring-macos-blue-muted"
                   >
                     <option value="openweather">
                       OpenWeatherMap {!hasOpenWeatherApiKey() && '(API key required)'}
@@ -374,12 +374,12 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                           setApiKeyStatus('')
                         }}
                         placeholder="Enter your API key"
-                        className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue text-sm"
+                        className="flex-1 px-4 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-muted-light dark:focus:ring-macos-blue-muted text-sm"
                       />
                       <button
                         onClick={saveApiKey}
                         disabled={!apiKey.trim()}
-                        className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                        className="px-4 py-2 rounded-lg bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                       >
                         Save
                       </button>
@@ -415,7 +415,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                   <select
                     value={radarProvider}
                     onChange={(e) => handleRadarProviderChange(e.target.value)}
-                    className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-light dark:focus:ring-macos-blue"
+                    className="px-3 py-2 rounded-lg bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border focus:outline-none focus:ring-2 focus:ring-macos-blue-muted-light dark:focus:ring-macos-blue-muted"
                   >
                     <option value="noaa">NOAA (US Only)</option>
                   </select>
@@ -436,7 +436,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
               {updateStatus === 'idle' && (
                 <button
                   onClick={handleCheckForUpdates}
-                  className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity text-sm font-medium"
+                  className="px-4 py-2 rounded-lg bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white hover:opacity-90 transition-opacity text-sm font-medium"
                 >
                   Check for Updates
                 </button>
@@ -459,13 +459,13 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
 
               {updateStatus === 'available' && (
                 <div className="space-y-3">
-                  <div className="text-sm text-blue-600 dark:text-blue-400">
+                  <div className="text-sm text-macos-blue-muted-light dark:text-macos-blue-muted">
                     Update available ({updateCommitCount} new {updateCommitCount === 1 ? 'commit' : 'commits'}). Install now?
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handlePerformUpdate}
-                      className="px-4 py-2 rounded-lg bg-macos-blue-light dark:bg-macos-blue text-white hover:opacity-90 transition-opacity text-sm font-medium"
+                      className="px-4 py-2 rounded-lg bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white hover:opacity-90 transition-opacity text-sm font-medium"
                     >
                       Yes, Update
                     </button>
@@ -599,7 +599,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex items-center gap-2.5 w-full text-left px-3 py-2.5 text-sm font-medium transition-colors rounded-lg ${
                   activeCategory === cat.id
-                    ? 'bg-macos-blue-light dark:bg-macos-blue text-white'
+                    ? 'bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white'
                     : 'text-macos-text-light dark:text-macos-text hover:bg-macos-border-light dark:hover:bg-macos-border'
                 } ${cat.id === 'exit' ? 'mt-auto' : ''}`}
                 style={cat.id === 'exit' ? { marginTop: 'auto' } : {}}
@@ -621,7 +621,7 @@ function SettingsModal({ onClose, theme, onToggleTheme, onLocationChange }) {
             <div className="shrink-0 px-5 py-3 border-t border-macos-border-light dark:border-macos-border flex justify-end bg-macos-card-light dark:bg-macos-card">
               <button
                 onClick={onClose}
-                className="touch-target px-6 py-2 rounded-xl bg-macos-blue-light dark:bg-macos-blue text-white font-medium hover:opacity-90 transition-opacity text-sm"
+                className="touch-target px-6 py-2 rounded-xl bg-macos-blue-muted-light dark:bg-macos-blue-muted text-white font-medium hover:opacity-90 transition-opacity text-sm"
               >
                 Done
               </button>
