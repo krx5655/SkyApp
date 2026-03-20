@@ -48,6 +48,10 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
     }
 
     fetchForecast()
+
+    // Auto-refresh every 15 minutes to keep weather data current
+    const interval = setInterval(fetchForecast, 15 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [refreshTrigger]) // onForecastLoaded intentionally omitted to prevent infinite loop
 
   function getWeatherIcon(condition) {

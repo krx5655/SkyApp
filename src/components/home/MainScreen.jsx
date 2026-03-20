@@ -29,6 +29,10 @@ function MainScreen({ onNavigate, onOpenSettings, refreshTrigger }) {
     }
 
     fetchCurrentWeather()
+
+    // Auto-refresh every 15 minutes to keep weather data current
+    const interval = setInterval(fetchCurrentWeather, 15 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [refreshTrigger])
 
   const apps = [

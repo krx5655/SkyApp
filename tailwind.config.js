@@ -21,6 +21,8 @@ export default {
         'macos-text-secondary-light': '#86868b',
         'macos-blue': '#0a84ff',
         'macos-blue-light': '#007aff',
+        'macos-blue-muted': '#5a8fca',
+        'macos-blue-muted-light': '#4a7fba',
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
