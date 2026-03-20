@@ -1,5 +1,31 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import clearDaySvg from '@bybas/weather-icons/production/fill/all/clear-day.svg'
+import clearNightSvg from '@bybas/weather-icons/production/fill/all/clear-night.svg'
+import partlyCloudyDaySvg from '@bybas/weather-icons/production/fill/all/partly-cloudy-day.svg'
+import cloudySvg from '@bybas/weather-icons/production/fill/all/cloudy.svg'
+import rainSvg from '@bybas/weather-icons/production/fill/all/rain.svg'
+import thunderstormsRainSvg from '@bybas/weather-icons/production/fill/all/thunderstorms-rain.svg'
+import snowSvg from '@bybas/weather-icons/production/fill/all/snow.svg'
+import fogSvg from '@bybas/weather-icons/production/fill/all/fog.svg'
+
+const WEATHER_ICON_MAP = {
+  '☀️': clearDaySvg,
+  '🌙': clearNightSvg,
+  '⛅': partlyCloudyDaySvg,
+  '☁️': cloudySvg,
+  '🌧️': rainSvg,
+  '⛈️': thunderstormsRainSvg,
+  '❄️': snowSvg,
+  '🌫️': fogSvg,
+}
+
+function WeatherIcon({ emoji, size = 24 }) {
+  const src = WEATHER_ICON_MAP[emoji]
+  return src
+    ? <img src={src} width={size} height={size} alt={emoji} />
+    : <span>{emoji}</span>
+}
 import { motion, useAnimation } from 'framer-motion'
 import weatherService from '../../services/weather/weatherService'
 import { getTemperatureUnit, getWindSpeedUnit } from '../../services/weather/config'
@@ -353,11 +379,10 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                     return (
                       <div
                         key={hour}
-                        className="text-base flex-1 text-center drop-shadow-md"
+                        className="flex-1 flex justify-center drop-shadow-md"
                         title={data?.condition}
-                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
                       >
-                        {data?.icon || ''}
+                        {data?.icon ? <WeatherIcon emoji={data.icon} size={24} /> : null}
                       </div>
                     )
                   })}
@@ -506,7 +531,7 @@ function DailyForecast({ selectedDay, forecastData = [], onNavigateDay, refreshT
                     >
                       <div className="text-xs font-semibold mb-1 text-center">{timeStr}</div>
                       <div className="flex items-center gap-2">
-                        <div className="text-xl">{hoveredData.icon}</div>
+                        <WeatherIcon emoji={hoveredData.icon} size={28} />
                         <div className="text-lg font-bold">{convertTemperature(hoveredData.temp, tempUnit)}{getTemperatureSymbol(tempUnit)}</div>
                       </div>
                     </div>
