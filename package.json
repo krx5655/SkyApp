@@ -13,6 +13,7 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "@bybas/weather-icons": "^2.0.0",
     "date-fns": "^3.0.0",
     "framer-motion": "^11.0.0",
     "leaflet": "^1.9.4",

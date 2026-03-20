@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
-import { WiDaySunny, WiNightClear, WiDayCloudy, WiCloudy, WiRain, WiThunderstorm, WiSnow, WiFog } from 'react-icons/wi'
 import { format, addDays } from 'date-fns'
+import clearDaySvg from '@bybas/weather-icons/production/fill/all/clear-day.svg'
+import clearNightSvg from '@bybas/weather-icons/production/fill/all/clear-night.svg'
+import partlyCloudyDaySvg from '@bybas/weather-icons/production/fill/all/partly-cloudy-day.svg'
+import cloudySvg from '@bybas/weather-icons/production/fill/all/cloudy.svg'
+import rainSvg from '@bybas/weather-icons/production/fill/all/rain.svg'
+import thunderstormsRainSvg from '@bybas/weather-icons/production/fill/all/thunderstorms-rain.svg'
+import snowSvg from '@bybas/weather-icons/production/fill/all/snow.svg'
+import fogSvg from '@bybas/weather-icons/production/fill/all/fog.svg'
 import weatherService from '../../services/weather/weatherService'
 import { getTemperatureUnit } from '../../services/weather/config'
 import { convertTemperature, getTemperatureSymbol } from '../../services/weather/unitConversion'
@@ -57,17 +64,19 @@ function WeeklyForecast({ onDaySelect, onForecastLoaded, refreshTrigger }) {
 
   function getWeatherIcon(emoji) {
     const iconMap = {
-      '☀️': WiDaySunny,
-      '🌙': WiNightClear,
-      '⛅': WiDayCloudy,
-      '☁️': WiCloudy,
-      '🌧️': WiRain,
-      '⛈️': WiThunderstorm,
-      '❄️': WiSnow,
-      '🌫️': WiFog,
+      '☀️': clearDaySvg,
+      '🌙': clearNightSvg,
+      '⛅': partlyCloudyDaySvg,
+      '☁️': cloudySvg,
+      '🌧️': rainSvg,
+      '⛈️': thunderstormsRainSvg,
+      '❄️': snowSvg,
+      '🌫️': fogSvg,
     }
-    const Icon = iconMap[emoji]
-    return Icon ? <Icon size={52} /> : <span className="text-4xl">{emoji}</span>
+    const src = iconMap[emoji]
+    return src
+      ? <img src={src} width={52} height={52} alt={emoji} />
+      : <span className="text-4xl">{emoji}</span>
   }
 
   return (
