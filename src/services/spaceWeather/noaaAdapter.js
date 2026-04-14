@@ -45,11 +45,26 @@ class NoaaSpaceWeatherAdapter {
    */
   async getKpIndex() {
     try {
+      console.log('[NoaaAdapter] Fetching KP index from endpoint: /products/noaa-planetary-k-index.json')
       const data = await this.fetch('/products/noaa-planetary-k-index.json')
 
+      console.log('[NoaaAdapter] Raw KP response type:', typeof data, '| isArray:', Array.isArray(data))
+      console.log('[NoaaAdapter] Total rows received:', data?.length)
+      console.log('[NoaaAdapter] First row (header/sample):', JSON.stringify(data?.[0]))
+      console.log('[NoaaAdapter] Second row (first data row):', JSON.stringify(data?.[1]))
+
       if (!data || data.length === 0) {
-        console.warn('[NoaaAdapter] No KP index data received')
+        console.warn('[NoaaAdapter] No KP index data received — response was empty or null')
         return []
+      }
+
+      // Detect whether rows are arrays (old format) or objects (new format)
+      const firstDataRow = data[1] ?? data[0]
+      const rowIsArray = Array.isArray(firstDataRow)
+      const rowIsObject = firstDataRow !== null && typeof firstDataRow === 'object' && !rowIsArray
+      console.log('[NoaaAdapter] Row format — isArray:', rowIsArray, '| isObject:', rowIsObject)
+      if (rowIsObject) {
+        console.log('[NoaaAdapter] Object row keys:', Object.keys(firstDataRow))
       }
 
       // Skip header row (first element is ["time_tag", "Kp", "a_running", "station_count"])
@@ -57,13 +72,37 @@ class NoaaSpaceWeatherAdapter {
 
       // Each row is an array: ["2026-02-02 18:00:00.000", "1.33", "5", "8"]
       // [0] = time_tag, [1] = Kp, [2] = a_running, [3] = station_count
-      const parsed = dataRows.map(row => ({
-        time: this.parseUTCDate(row[0].replace(' ', 'T')), // Convert space to T for ISO format
-        kp: parseFloat(row[1]),
-        timestamp: row[0]
-      }))
+      const parsed = dataRows.map((row, idx) => {
+        let timeRaw, kpRaw
+        if (Array.isArray(row)) {
+          timeRaw = row[0]
+          kpRaw = row[1]
+        } else {
+          // Handle potential object format (e.g. { time_tag, Kp, ... })
+          timeRaw = row.time_tag ?? row.time ?? row.TimeTag
+          kpRaw = row.Kp ?? row.kp ?? row.KpIndex
+        }
 
-      return parsed
+        const time = this.parseUTCDate(String(timeRaw).replace(' ', 'T'))
+        const kp = parseFloat(kpRaw)
+
+        if (idx < 2 || idx >= dataRows.length - 2) {
+          console.log(`[NoaaAdapter] Row[${idx}] timeRaw="${timeRaw}" kpRaw="${kpRaw}" → time=${time?.toISOString()} kp=${kp}`)
+        }
+        if (isNaN(kp)) {
+          console.warn(`[NoaaAdapter] Row[${idx}] produced NaN kp — raw row:`, JSON.stringify(row))
+        }
+
+        return { time, kp, timestamp: timeRaw }
+      })
+
+      const validParsed = parsed.filter(p => p.time instanceof Date && !isNaN(p.time) && !isNaN(p.kp))
+      console.log(`[NoaaAdapter] Parsed ${parsed.length} rows, ${validParsed.length} valid (non-NaN time & kp)`)
+      if (validParsed.length < parsed.length) {
+        console.warn(`[NoaaAdapter] Dropped ${parsed.length - validParsed.length} rows due to invalid time or kp`)
+      }
+
+      return validParsed
     } catch (error) {
       console.error('[NoaaAdapter] Failed to get KP index:', error)
       throw error
