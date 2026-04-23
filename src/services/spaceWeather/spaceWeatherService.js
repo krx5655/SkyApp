@@ -24,7 +24,7 @@ class SpaceWeatherService {
     const cacheKey = 'kp_index'
     const cached = getCache(cacheKey)
     if (cached) {
-      console.log('[SpaceWeatherService] Using cached KP index')
+      console.log('[SpaceWeatherService] Using cached KP index, entries:', cached.length)
       // Rehydrate Date objects from cached strings
       return cached.map(item => ({
         ...item,

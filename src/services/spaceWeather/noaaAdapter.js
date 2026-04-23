@@ -52,18 +52,21 @@ class NoaaSpaceWeatherAdapter {
         return []
       }
 
-      // Skip header row (first element is ["time_tag", "Kp", "a_running", "station_count"])
-      const dataRows = data.slice(1)
+      // NOAA changed their API: now returns array of objects with no header row.
+      // New: [{"time_tag":"2026-04-16T00:00:00","Kp":0.67,...}, ...]
+      // Old: [["time_tag","Kp",...], ["2026-02-02 18:00:00.000","1.33",...], ...]
+      const isObjectFormat = !Array.isArray(data[0])
+      const rows = isObjectFormat ? data : data.slice(1)
 
-      // Each row is an array: ["2026-02-02 18:00:00.000", "1.33", "5", "8"]
-      // [0] = time_tag, [1] = Kp, [2] = a_running, [3] = station_count
-      const parsed = dataRows.map(row => ({
-        time: this.parseUTCDate(row[0].replace(' ', 'T')), // Convert space to T for ISO format
-        kp: parseFloat(row[1]),
-        timestamp: row[0]
-      }))
-
-      return parsed
+      return rows.map(row => {
+        const timeRaw = isObjectFormat ? row.time_tag : row[0]
+        const kpRaw = isObjectFormat ? row.Kp : row[1]
+        return {
+          time: this.parseUTCDate(String(timeRaw).replace(' ', 'T')),
+          kp: parseFloat(kpRaw),
+          timestamp: timeRaw
+        }
+      }).filter(p => p.time instanceof Date && !isNaN(p.time) && !isNaN(p.kp))
     } catch (error) {
       console.error('[NoaaAdapter] Failed to get KP index:', error)
       throw error
