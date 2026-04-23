@@ -86,23 +86,13 @@ function SpaceWeatherView() {
 
 // KP Index Historical Bar Graph
 function KpIndexChart({ data }) {
-  console.log('[KpIndexChart] Received data:', data == null ? 'null/undefined' : `${data.length} entries`)
-
   if (!data || data.length === 0) {
-    console.warn('[KpIndexChart] No data — rendering LoadingCard')
     return <LoadingCard title="Geomagnetic Activity" />
   }
 
   // Get last 3 days (72 hours) of data
   const now = new Date()
   const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
-
-  console.log(`[KpIndexChart] After 72h filter: ${last72h.length} of ${data.length} entries kept (now=${now.toISOString()})`)
-  if (data.length > 0) {
-    const oldest = data[0]
-    const newest = data[data.length - 1]
-    console.log('[KpIndexChart] Data time range:', oldest.time?.toISOString(), '→', newest.time?.toISOString())
-  }
 
   // If no data in last 72h, show error
   if (last72h.length === 0) {

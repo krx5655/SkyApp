@@ -34,11 +34,6 @@ class SpaceWeatherService {
 
     console.log('[SpaceWeatherService] Fetching KP index from API')
     const data = await this.adapter.getKpIndex()
-    console.log('[SpaceWeatherService] KP index fetch returned', data?.length ?? 'null/undefined', 'entries')
-    if (data && data.length > 0) {
-      const last = data[data.length - 1]
-      console.log('[SpaceWeatherService] KP index latest entry:', JSON.stringify({ time: last.time, kp: last.kp }))
-    }
     setCache(cacheKey, data, this.cacheTTL.data)
     return data
   }
