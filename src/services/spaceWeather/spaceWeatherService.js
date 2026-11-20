@@ -144,23 +144,6 @@ class SpaceWeatherService {
   }
 
   /**
-   * Get LASCO C3 coronograph image URL
-   */
-  async getLascoC3Image() {
-    const cacheKey = 'lasco_c3'
-    const cached = getCache(cacheKey)
-    if (cached) {
-      console.log('[SpaceWeatherService] Using cached LASCO C3 URL')
-      return cached
-    }
-
-    console.log('[SpaceWeatherService] Fetching LASCO C3 image URL')
-    const url = await this.adapter.getLascoC3Image()
-    setCache(cacheKey, url, this.cacheTTL.images)
-    return url
-  }
-
-  /**
    * Get solar wind data
    */
   async getSolarWind() {
@@ -215,7 +198,6 @@ class SpaceWeatherService {
         alerts,
         sunspotNumber,
         enlilAnimation,
-        lascoImage,
         solarWind,
         protonFlux
       ] = await Promise.allSettled([
@@ -225,7 +207,6 @@ class SpaceWeatherService {
         this.getAlerts(),
         this.getSunspotNumber(),
         this.getEnlilAnimation(),
-        this.getLascoC3Image(),
         this.getSolarWind(),
         this.getProtonFlux()
       ])
@@ -237,7 +218,6 @@ class SpaceWeatherService {
         alerts: alerts.status === 'fulfilled' ? alerts.value : [],
         sunspotNumber: sunspotNumber.status === 'fulfilled' ? sunspotNumber.value : null,
         enlilAnimation: enlilAnimation.status === 'fulfilled' ? enlilAnimation.value : null,
-        lascoImage: lascoImage.status === 'fulfilled' ? lascoImage.value : null,
         solarWind: solarWind.status === 'fulfilled' ? solarWind.value : null,
         protonFlux: protonFlux.status === 'fulfilled' ? protonFlux.value : null,
       }

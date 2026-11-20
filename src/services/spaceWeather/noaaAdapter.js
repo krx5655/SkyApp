@@ -198,16 +198,6 @@ class NoaaSpaceWeatherAdapter {
   }
 
   /**
-   * Get LASCO C3 coronograph image URL
-   * @returns {Promise<string>}
-   */
-  async getLascoC3Image() {
-    // Just return the URL directly - CORS prevents HEAD requests
-    // The <img> tag will handle loading the image properly
-    return `https://soho.nascom.nasa.gov/data/realtime/c3/512/latest.jpg?t=${Date.now()}`
-  }
-
-  /**
    * Get solar wind data
    * @returns {Promise<Object>}
    */

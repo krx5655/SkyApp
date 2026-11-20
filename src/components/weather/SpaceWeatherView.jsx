@@ -11,7 +11,6 @@ function SpaceWeatherView() {
     alerts: [],
     sunspotNumber: null,
     enlilAnimation: null,
-    lascoImage: null,
     solarWind: null,
     protonFlux: null,
   })
@@ -77,9 +76,6 @@ function SpaceWeatherView() {
 
       {/* WSA-Enlil Animation */}
       <EnlilAnimationPlayer animation={data.enlilAnimation} />
-
-      {/* LASCO C3 Coronograph */}
-      <LascoCoronograph imageUrl={data.lascoImage} />
     </div>
   )
 }
@@ -549,32 +545,28 @@ function SolarFlaresSection({ flares }) {
     )
   }
 
+  const timeFmt = { hour: 'numeric', minute: '2-digit' }
+
+  // One row of compact tiles (same card style as the stat cards above)
   return (
-    <div className="max-w-2xl mx-auto">
+    <div>
       <h3 className="text-xl font-semibold mb-4">Recent Solar Flares</h3>
-      <div className="space-y-3">
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
         {flares.slice(0, 5).map((flare, idx) => (
           <div
             key={idx}
-            className="p-4 rounded-xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex items-center justify-between"
+            className="p-4 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border text-center"
           >
-            <div>
-              <div className="font-semibold">Class {flare.classType}</div>
-              <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                {flare.beginTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                {' – '}
-                {flare.endTime
-                  ? flare.endTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-                  : 'ongoing'}
-              </div>
+            <div className="text-2xl font-bold">{flare.classType}</div>
+            <div className="text-sm font-medium mt-1">
+              {flare.maxTime.toLocaleDateString([], { month: 'short', day: 'numeric' })}
+              {', '}
+              {flare.maxTime.toLocaleTimeString([], timeFmt)}
             </div>
-            <div className="text-right">
-              <div className="text-sm font-medium">
-                {flare.maxTime.toLocaleTimeString()}
-              </div>
-              <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-                {flare.maxTime.toLocaleDateString()}
-              </div>
+            <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary mt-1">
+              {flare.beginTime.toLocaleTimeString([], timeFmt)}
+              {' – '}
+              {flare.endTime ? flare.endTime.toLocaleTimeString([], timeFmt) : 'ongoing'}
             </div>
           </div>
         ))}
@@ -638,56 +630,6 @@ function EnlilAnimationPlayer({ animation }) {
             Frame {currentFrame + 1} / {animation.imageUrls.length}
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-// LASCO C3 Coronograph
-function LascoCoronograph({ imageUrl }) {
-  const [imageError, setImageError] = useState(false)
-  const [imageLoading, setImageLoading] = useState(true)
-
-  if (!imageUrl) {
-    return <LoadingCard title="LASCO C3 Coronograph" />
-  }
-
-  return (
-    <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-semibold">LASCO C3 Coronograph</h3>
-        <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-          SOHO Satellite • Real-time
-        </div>
-      </div>
-
-      <div className="relative bg-black rounded-xl overflow-hidden">
-        {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
-        )}
-        {imageError ? (
-          <div className="aspect-square flex items-center justify-center text-macos-text-secondary-light dark:text-macos-text-secondary">
-            <div className="text-center">
-              <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm">Failed to load coronograph image</p>
-            </div>
-          </div>
-        ) : (
-          <img
-            src={imageUrl}
-            alt="LASCO C3 Coronograph"
-            className="w-full h-auto"
-            onLoad={() => setImageLoading(false)}
-            onError={() => {
-              setImageError(true)
-              setImageLoading(false)
-            }}
-          />
-        )}
       </div>
     </div>
   )
