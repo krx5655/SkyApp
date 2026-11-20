@@ -90,12 +90,21 @@ function KpIndexChart({ data }) {
     return <LoadingCard title="Geomagnetic Activity" />
   }
 
-  // Get last 3 days (72 hours) of data
+  // Show 3 whole UTC days (today + previous 2) as 24 fixed 3-hour slots,
+  // matching NOAA's 00/03/.../21 UTC Kp periods. Future slots stay empty.
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const SLOT_MS = 3 * 60 * 60 * 1000
   const now = new Date()
-  const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const windowStart = todayUtc - 2 * DAY_MS
+  const slots = Array.from({ length: 24 }, (_, i) => ({ time: new Date(windowStart + i * SLOT_MS), kp: null }))
+  data.forEach(d => {
+    const i = Math.floor((d.time.getTime() - windowStart) / SLOT_MS)
+    if (i >= 0 && i < 24) slots[i].kp = d.kp
+  })
 
-  // If no data in last 72h, show error
-  if (last72h.length === 0) {
+  // If no data in the window, show error
+  if (slots.every(s => s.kp === null)) {
     return (
       <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border flex-1 min-w-0">
         <h3 className="text-xl font-semibold mb-2">Geomagnetic Activity</h3>
@@ -106,27 +115,12 @@ function KpIndexChart({ data }) {
     )
   }
 
-  // Sample data to show ~24 bars (8 per day for 3 days)
-  const sampledData = []
-  const step = Math.max(1, Math.floor(last72h.length / 24))
-  for (let i = 0; i < last72h.length; i += step) {
-    sampledData.push(last72h[i])
-  }
-
-  // Compute day boundaries for vertical gridlines and date labels
-  const kpDayBoundaries = []
-  let currentKpDay = null
-  sampledData.forEach((item, idx) => {
-    const dayStr = item.time.toDateString()
-    if (dayStr !== currentKpDay) {
-      currentKpDay = dayStr
-      kpDayBoundaries.push({
-        idx,
-        xPct: (idx / sampledData.length) * 100,
-        label: item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      })
-    }
-  })
+  // UTC day boundaries every 8 slots; labels centred under each day
+  const kpDayBoundaries = [0, 1, 2].map(d => ({
+    xPct: (d * 8 / 24) * 100,
+    centerPct: ((d * 8 + 4) / 24) * 100,
+    label: new Date(windowStart + d * DAY_MS).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  }))
 
   // Returns Kp notation with +/- suffix for values >= 4
   const getKpNotation = (kp) => {
@@ -195,12 +189,13 @@ function KpIndexChart({ data }) {
           {/* Chart - fixed height */}
           <div className="relative h-48">
             {/* Bars - in background */}
-            <div className="absolute inset-0 flex items-end justify-between gap-1">
-              {sampledData.map((item, idx) => {
+            <div className="absolute inset-0 flex items-end">
+              {slots.map((item, idx) => {
+                if (item.kp === null) return <div key={idx} className="flex-1 h-full" />
                 const height = (item.kp / 9) * 100
                 const barColor = getKpColor(item.kp)
                 return (
-                  <div key={idx} className="flex-1 h-full flex flex-col justify-end relative">
+                  <div key={idx} className="flex-1 h-full flex flex-col justify-end relative px-[2px]">
                     {item.kp >= 4 && (
                       <div
                         className="absolute left-0 right-0 text-center text-[11px] font-bold text-gray-900 dark:text-white leading-none"
@@ -212,7 +207,7 @@ function KpIndexChart({ data }) {
                     <div
                       className="w-full transition-all"
                       style={{ height: `${height}%`, backgroundColor: barColor }}
-                      title={`KP ${item.kp.toFixed(1)} at ${item.time.toLocaleString()}`}
+                      title={`KP ${item.kp.toFixed(2)} at ${item.time.toISOString().slice(0, 16).replace('T', ' ')} UTC`}
                     />
                   </div>
                 )
@@ -238,17 +233,18 @@ function KpIndexChart({ data }) {
             </div>
           </div>
 
-          {/* Date labels — aligned with vertical day gridlines */}
+          {/* Date labels (UTC) — centred under each day */}
           <div className="relative h-5 mt-1">
-            {kpDayBoundaries.map(({ xPct, label }) => (
+            {kpDayBoundaries.map(({ centerPct, label }) => (
               <div
                 key={label}
                 className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap"
-                style={{ left: `${xPct}%`, transform: 'translateX(-50%)' }}
+                style={{ left: `${centerPct}%`, transform: 'translateX(-50%)' }}
               >
                 {label}
               </div>
             ))}
+            <div className="absolute right-0 text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary" style={{ top: '14px' }}>UTC</div>
           </div>
         </div>
 
@@ -300,8 +296,8 @@ function SolarActivityStats({ solarWind, xrayFlux, protonFlux, sunspotNumber }) 
       />
       <StatCard
         title="Sunspot Number"
-        value={sunspotNumber?.count || '--'}
-        unit="spots"
+        value={sunspotNumber?.count ?? '--'}
+        unit="daily SSN"
       />
     </div>
   )
@@ -358,9 +354,12 @@ function SolarXrayFluxChart({ data }) {
     return <LoadingCard title="Solar X-ray Flux" />
   }
 
-  // Filter to last 72 hours
+  // Fixed 72-hour time axis ending now
+  const WINDOW_MS = 72 * 60 * 60 * 1000
   const now = new Date()
-  const last72h = data.filter(d => (now - d.time) <= 72 * 60 * 60 * 1000)
+  const windowStart = now.getTime() - WINDOW_MS
+  const last72h = data.filter(d => d.time.getTime() >= windowStart && d.time <= now)
+  const timeToX = (t) => ((t.getTime() - windowStart) / WINDOW_MS) * 100
 
   if (last72h.length === 0) {
     return (
@@ -373,39 +372,29 @@ function SolarXrayFluxChart({ data }) {
     )
   }
 
-  // Sample to ~300 points for smooth SVG rendering
-  const sampledData = []
-  const step = Math.max(1, Math.floor(last72h.length / 300))
-  for (let i = 0; i < last72h.length; i += step) {
-    sampledData.push(last72h[i])
-  }
-
-  // Build SVG points
-  const svgPoints = sampledData.map((item, idx) => ({
-    x: (idx / Math.max(sampledData.length - 1, 1)) * 100,
-    y: fluxToY(item.flux),
-    time: item.time
-  }))
-
-  // SVG path strings
-  const linePath = svgPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
-  const fillPath = linePath +
-    ` L ${svgPoints[svgPoints.length - 1].x},100 L ${svgPoints[0].x},100 Z`
-
-  // Find day boundaries for date labels and vertical lines
-  const dayBoundaries = []
-  let currentDay = null
-  sampledData.forEach((item, idx) => {
-    const dayStr = item.time.toDateString()
-    if (dayStr !== currentDay) {
-      currentDay = dayStr
-      dayBoundaries.push({
-        idx,
-        xPct: (idx / Math.max(sampledData.length - 1, 1)) * 100,
-        label: item.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      })
-    }
+  // Plot every 1-minute point (no down-sampling, so flare peaks are kept).
+  // Points are placed by time; the line is broken across data gaps > 10 min.
+  const GAP_MS = 10 * 60 * 1000
+  const segments = []
+  let seg = []
+  last72h.forEach((item, i) => {
+    if (i > 0 && item.time - last72h[i - 1].time > GAP_MS) { segments.push(seg); seg = [] }
+    seg.push({ x: timeToX(item.time), y: fluxToY(item.flux) })
   })
+  if (seg.length) segments.push(seg)
+  const linePaths = segments.map(pts => pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' '))
+  const fillPaths = segments.map((pts, k) => linePaths[k] + ` L ${pts[pts.length - 1].x.toFixed(3)},100 L ${pts[0].x.toFixed(3)},100 Z`)
+
+  // UTC midnights inside the window: vertical lines + date labels
+  const dayBoundaries = []
+  const firstMidnight = Math.ceil(windowStart / 86400000) * 86400000
+  for (let t = firstMidnight; t <= now.getTime(); t += 86400000) {
+    const d = new Date(t)
+    dayBoundaries.push({
+      xPct: timeToX(d),
+      label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+    })
+  }
 
   const latestFlux = last72h[last72h.length - 1]?.flux || 0
 
@@ -482,9 +471,9 @@ function SolarXrayFluxChart({ data }) {
               </linearGradient>
             </defs>
             {/* Filled area */}
-            <path d={fillPath} fill="url(#xrayFillGradient)" opacity="0.85" />
+            {fillPaths.map((d, k) => <path key={`f${k}`} d={d} fill="url(#xrayFillGradient)" opacity="0.85" />)}
             {/* Line on top */}
-            <path d={linePath} fill="none" stroke="#1a1a1a" strokeWidth="0.3" />
+            {linePaths.map((d, k) => <path key={`l${k}`} d={d} fill="none" stroke="#1a1a1a" strokeWidth="0.3" />)}
           </svg>
 
           {/* Gridlines — foreground */}
@@ -505,8 +494,8 @@ function SolarXrayFluxChart({ data }) {
                 style={{ top: `${topPct}%`, opacity: 0.3 }}
               />
             ))}
-            {/* Vertical day separators */}
-            {dayBoundaries.slice(1).map(({ xPct, label }) => (
+            {/* Vertical day separators (UTC midnight) */}
+            {dayBoundaries.map(({ xPct, label }) => (
               <div
                 key={label}
                 className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600"
@@ -515,16 +504,22 @@ function SolarXrayFluxChart({ data }) {
             ))}
           </div>
 
-          {/* X-axis date labels */}
+          {/* X-axis date labels (UTC); labels near either edge are anchored so they stay inside the chart */}
           {dayBoundaries.map(({ xPct, label }) => (
             <div
               key={label}
               className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary whitespace-nowrap"
-              style={{ left: `${xPct}%`, bottom: '-20px', transform: 'translateX(-50%)' }}
+              style={{
+                left: `${xPct}%`,
+                bottom: '-20px',
+                transform: xPct > 94 ? 'translateX(-100%)' : xPct < 6 ? 'none' : 'translateX(-50%)'
+              }}
             >
               {label}
             </div>
           ))}
+          {/* "UTC" sits under the flare-class boxes so it never collides with a date label */}
+          <div className="absolute text-[10px] text-macos-text-secondary-light dark:text-macos-text-secondary" style={{ left: '-26px', bottom: '-20px' }}>UTC</div>
         </div>
 
         {/* R-scale — aligned with log-scale gridlines */}
@@ -566,8 +561,11 @@ function SolarFlaresSection({ flares }) {
             <div>
               <div className="font-semibold">Class {flare.classType}</div>
               <div className="text-sm text-macos-text-secondary-light dark:text-macos-text-secondary">
-                {flare.sourceLocation}
-                {flare.activeRegion && ` • Region ${flare.activeRegion}`}
+                {flare.beginTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                {' – '}
+                {flare.endTime
+                  ? flare.endTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                  : 'ongoing'}
               </div>
             </div>
             <div className="text-right">
@@ -611,14 +609,15 @@ function EnlilAnimationPlayer({ animation }) {
     )
   }
 
-  const modelTime = new Date(animation.modelCompletionTime)
 
   return (
     <div className="p-6 rounded-2xl bg-macos-card-light dark:bg-macos-card border border-macos-border-light dark:border-macos-border">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-semibold">WSA-Enlil Solar Wind Prediction</h3>
         <div className="text-xs text-macos-text-secondary-light dark:text-macos-text-secondary">
-          Model: {modelTime.toLocaleString()}
+          {animation.frameTimes?.[currentFrame]
+            ? new Date(animation.frameTimes[currentFrame]).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+            : ''}
         </div>
       </div>
 

@@ -97,21 +97,24 @@ class NoaaSpaceWeatherAdapter {
   }
 
   /**
-   * Get recent solar flares
+   * Get recent solar flares (last 7 days, newest first)
    * @returns {Promise<Array>}
    */
   async getSolarFlares() {
     try {
-      const data = await this.fetch('/json/goes/primary/xray-flares-latest.json')
-      return data.map(item => ({
-        beginTime: this.parseUTCDate(item.begin_time),
-        maxTime: this.parseUTCDate(item.max_time),
-        endTime: this.parseUTCDate(item.end_time),
-        classType: item.class_type,
-        sourceLocation: item.source_location || 'Unknown',
-        activeRegion: item.active_region || null,
-        timestamp: item.begin_time
-      }))
+      // xray-flares-latest.json only holds the current event and has no class field;
+      // the 7-day list has every flare with its peak class (max_class), oldest first.
+      const data = await this.fetch('/json/goes/primary/xray-flares-7-day.json')
+      return data
+        .filter(item => item.max_time && item.max_class)
+        .map(item => ({
+          beginTime: this.parseUTCDate(item.begin_time),
+          maxTime: this.parseUTCDate(item.max_time),
+          endTime: this.parseUTCDate(item.end_time),
+          classType: item.max_class,
+          timestamp: item.begin_time
+        }))
+        .sort((a, b) => b.maxTime - a.maxTime)
     } catch (error) {
       console.error('[NoaaAdapter] Failed to get solar flares:', error)
       throw error
@@ -139,21 +142,21 @@ class NoaaSpaceWeatherAdapter {
   }
 
   /**
-   * Get sunspot number (current observed)
+   * Get sunspot number (SWPC daily observed)
    * @returns {Promise<Object>}
    */
   async getSunspotNumber() {
     try {
-      const data = await this.fetch('/json/solar-cycle/observed-solar-cycle-indices.json')
-      // Get the most recent sunspot number
-      if (data && data.length > 0) {
-        const latest = data[data.length - 1]
-        console.log('[NoaaAdapter] Sunspot data structure:', latest)
+      // Daily values, oldest first: [{"Obsdate":"2026-11-19T00:00:00","swpc_ssn":80}, ...]
+      // (observed-solar-cycle-indices.json is monthly, so it lagged by a month.)
+      const data = await this.fetch('/json/solar-cycle/swpc_observed_ssn.json')
+      const valid = (data || []).filter(d => d.Obsdate && Number.isFinite(parseFloat(d.swpc_ssn)))
+      if (valid.length > 0) {
+        const latest = valid[valid.length - 1]
         return {
-          count: Math.round(parseFloat(latest.ssn)),
-          smoothedCount: Math.round(parseFloat(latest.smoothed_ssn)),
-          date: this.parseUTCDate(latest.time_tag),
-          timestamp: latest.time_tag
+          count: Math.round(parseFloat(latest.swpc_ssn)),
+          date: this.parseUTCDate(latest.Obsdate),
+          timestamp: latest.Obsdate
         }
       }
       throw new Error('No sunspot data available')
@@ -169,27 +172,23 @@ class NoaaSpaceWeatherAdapter {
    */
   async getEnlilAnimation() {
     try {
+      // Format: [{"url":"/images/animations/enlil/enlil_com2_58627_20261116T180000.jpg"}, ...]
+      // one entry per frame; the frame's UTC time is encoded at the end of the file name.
       const data = await this.fetch('/products/animations/enlil.json')
-      console.log('[NoaaAdapter] Enlil raw response:', data)
-
-      if (!data) {
+      if (!Array.isArray(data) || data.length === 0) {
         return null
       }
 
-      // Handle both array and single object responses
-      const enlilData = Array.isArray(data) ? data[0] : data
-      console.log('[NoaaAdapter] Enlil data after array check:', enlilData)
-
-      if (!enlilData) {
-        return null
-      }
-
-      console.log('[NoaaAdapter] Enlil field names:', Object.keys(enlilData))
+      const frames = data.filter(item => item && item.url)
+      const frameTimes = frames.map(item => {
+        const m = item.url.match(/_(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.\w+$/)
+        return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z` : null
+      })
 
       return {
-        modelCompletionTime: enlilData.model_completion_time,
-        imageUrls: enlilData.images?.map(img => `${this.baseUrl}${img}`) || [],
-        timestamp: enlilData.model_completion_time
+        imageUrls: frames.map(item => `${this.baseUrl}${item.url}`),
+        frameTimes,
+        timestamp: frameTimes[0]
       }
     } catch (error) {
       console.error('[NoaaAdapter] Failed to get Enlil animation:', error)
@@ -214,15 +213,26 @@ class NoaaSpaceWeatherAdapter {
    */
   async getSolarWind() {
     try {
-      const data = await this.fetch('/json/rtsw/rtsw_mag_1m.json')
-      if (data && data.length > 0) {
-        const latest = data[data.length - 1]
-        console.log('[NoaaAdapter] Solar wind data structure:', latest)
+      // Plasma (speed/density) is in rtsw_wind_1m; magnetic field (Bz/Bt) is in rtsw_mag_1m.
+      // Both files mix several spacecraft and are newest-first; only `active` rows are the
+      // spacecraft NOAA is currently using.
+      const [wind, mag] = await Promise.all([
+        this.fetch('/json/rtsw/rtsw_wind_1m.json'),
+        this.fetch('/json/rtsw/rtsw_mag_1m.json').catch(() => [])
+      ])
+      const newestActive = (rows, field) => (rows || [])
+        .filter(r => r.active && r[field] != null)
+        .reduce((best, r) => (!best || r.time_tag > best.time_tag ? r : best), null)
+
+      const latest = newestActive(wind, 'proton_speed')
+      if (latest) {
+        const latestMag = newestActive(mag, 'bz_gsm')
         return {
-          speed: parseFloat(latest.speed) || 0,
-          density: parseFloat(latest.density) || 0,
-          bz: parseFloat(latest.bz_gsm) || 0,
-          bt: parseFloat(latest.bt) || 0,
+          speed: parseFloat(latest.proton_speed),
+          density: latest.proton_density != null ? parseFloat(latest.proton_density) : null,
+          bz: latestMag ? parseFloat(latestMag.bz_gsm) : null,
+          bt: latestMag ? parseFloat(latestMag.bt) : null,
+          source: latest.source,
           time: this.parseUTCDate(latest.time_tag),
           timestamp: latest.time_tag
         }
@@ -241,8 +251,10 @@ class NoaaSpaceWeatherAdapter {
   async getProtonFlux() {
     try {
       const data = await this.fetch('/json/goes/primary/integral-protons-plot-6-hour.json')
-      if (data && data.length > 0) {
-        const latest = data[data.length - 1]
+      // The file holds four energy channels; NOAA's S-scale (radiation storms) uses >=10 MeV.
+      const tenMeV = (data || []).filter(item => item.energy === '>=10 MeV')
+      if (tenMeV.length > 0) {
+        const latest = tenMeV.reduce((best, r) => (r.time_tag > best.time_tag ? r : best))
         return {
           flux: parseFloat(latest.flux) || 0,
           energy: latest.energy,
